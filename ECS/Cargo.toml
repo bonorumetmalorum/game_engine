@@ -1,0 +1,6 @@
+[package]
+name = "ECS"
+version = "0.1.0"
+authors = ["Govind Venkatesh <venkateshgovind1@gmail.com>"]
+
+[dependencies]
