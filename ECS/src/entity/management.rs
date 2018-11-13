@@ -1,7 +1,9 @@
 use super::Entity;
 
-trait StorageType{
-
+trait StorageType {
+    //methods to store things
+    fn put();
+    fn fetch();
 }
 
 struct EntityStorage<T> where T: StorageType {
@@ -15,3 +17,5 @@ impl EntityStorage<T>{
 
     fn fetch(&self, id: Entity){unimplemented!()}
 }
+
+//think about adding a grouping of common entities: Group(*Entity)
