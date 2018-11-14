@@ -1,6 +1,6 @@
-mod component;
-mod entity;
-mod system;
+pub mod component;
+pub mod entity;
+pub mod system;
 #[cfg(test)]
 mod tests;
 

@@ -19,3 +19,6 @@ impl EntityStorage<T>{
 }
 
 //think about adding a grouping of common entities: Group(*Entity)
+struct GenerationalVec{
+
+}
