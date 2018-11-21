@@ -1,5 +1,3 @@
 pub trait Component{
-    fn update(&mut self){
-        unimplemented!()
-    }
+    fn update(&mut self);
 }

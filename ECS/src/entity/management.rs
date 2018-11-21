@@ -1,41 +1,35 @@
 use super::*;
 use component::*;
 
-trait StorageType {
-    //methods to store things
-    fn put();
-    fn fetch();
-    fn delete();
+pub struct EntityStorage<T: Component> {
+    pub storage: Vec<Option<T>>,
+    pub generation: u64
 }
 
-struct EntityStorage<T> where T: StorageType {
-    storage: T
-}
-
-impl<T: StorageType> EntityStorage<T>{
-    fn register_new_entity(&mut self){unimplemented!()}
-
-    fn deregister_entity(&mut self, id: Entity){unimplemented!()}
-
-    fn fetch(&self, id: Entity){unimplemented!()}
-}
-
-//allows for storing of anyting implements the component trait
-struct GenerationalVec<T> where T: Component{
-    current_generation: Generation,
-    vec: Vec<T>
-}
-
-impl<T: Component> StorageType for GenerationalVec<T>{
-    fn put() {
-        unimplemented!()
+impl<T: Component> EntityStorage<T>{
+    pub fn register_new_entity(&mut self) -> EntityIndex {
+        self.storage.push(None);
+        self.generation += 1;
+        (self.storage.len() - 1, self.generation)
     }
 
-    fn fetch() {
-        unimplemented!()
+    pub fn deregister_entity(&mut self, id: Entity) -> T {
+        self.generation += 1;
+        self.storage[id].take().unwrap()
     }
 
-    fn delete() {
-        unimplemented!()
+    pub fn fetch(&self, id: Entity){unimplemented!()}
+
+    pub fn new_with_components(storage: Vec<Option<T>>) -> EntityStorage<T>{
+         EntityStorage{storage, generation: 0}
+    }
+
+    pub fn new() -> EntityStorage<T> {
+        EntityStorage{storage: Vec::new(), generation: 0}
     }
 }
+
+/*
+notes:
+make all data structure generational
+*/

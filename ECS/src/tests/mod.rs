@@ -1,11 +1,19 @@
- #[test]
-fn it_works() {
-     assert_eq!(2 + 2, 4);
+use entity::*;
+use entity::management::*;
+use component::*;
+
+struct StubComponent;
+
+impl Component for StubComponent{
+    fn update(&mut self) {
+    }
 }
 
  #[test]
  fn initialise_ecs(){
-     assert_eq!(true, false);
+     let entity_manager:EntityStorage<StubComponent> = EntityStorage::new();
+     assert_eq!(entity_manager.generation, 0);
+     assert_eq!(entity_manager.storage.len(), 0);
  }
 
  #[test]
