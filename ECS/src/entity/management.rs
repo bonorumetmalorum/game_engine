@@ -13,12 +13,42 @@ impl<T: Component> EntityStorage<T>{
         (self.storage.len() - 1, self.generation)
     }
 
-    pub fn deregister_entity(&mut self, id: Entity) -> T {
-        self.generation += 1;
-        self.storage[id].take().unwrap()
+    pub fn deregister_entity(&mut self, id: EntityIndex) -> Result<T, &str> {
+        if id.1 != self.generation {
+            Err("incorrect generation")
+        } else{
+            self.generation += 1;
+            Ok(self.storage[id.0].take().unwrap())
+        }
     }
 
-    pub fn fetch(&self, id: Entity){unimplemented!()}
+    pub fn add_component(&mut self, index: EntityIndex, component: T) -> Result<EntityIndex, &str>{
+        if index.1 != self.generation{
+            Err("incorrect generation")
+        }else{
+            self.generation += 1;
+            self.storage[index.0] = Some(component);
+            Ok((index.0, self.generation))
+        }
+    }
+
+    pub fn remove_component(&mut self, index: EntityIndex) -> Result<EntityIndex, &str>{
+        if index.1 != self.generation {
+            Err("incorrect generation")
+        }else{
+            self.generation += 1;
+            self.storage[index.0] = None;
+            Ok((index.0, self.generation))
+        }
+    }
+
+    pub fn fetch(&mut self, id: EntityIndex) -> Result<&Option<T>, &str> {
+        if id.1 != self.generation{
+            Err("incorrect generation")
+        }else{
+            Ok(&self.storage[id.0])
+        }
+    }
 
     pub fn new_with_components(storage: Vec<Option<T>>) -> EntityStorage<T>{
          EntityStorage{storage, generation: 0}
