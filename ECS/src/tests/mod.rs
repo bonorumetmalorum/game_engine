@@ -71,5 +71,6 @@ fn register_new_component(){
     //issue with dynamic typing.
     //look into any type
     //any type is the solution here, but need to figure out how to implement it into the EntityManager
+    assert_eq!(true, false);
 }
 
