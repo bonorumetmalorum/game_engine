@@ -1,6 +1,7 @@
 use entity::*;
 use entity::management::*;
 use component::*;
+use std::any::*;
 
 struct StubComponentA {
     pub counter: u8
@@ -71,6 +72,13 @@ fn register_new_component(){
     //issue with dynamic typing.
     //look into any type
     //any type is the solution here, but need to figure out how to implement it into the EntityManager
+    let comp: Box<dyn Component> = Box::new(StubComponentA{counter: 0});
+    let typ = comp.get_type_id();
+    if typ == TypeId::of::<StubComponentA>(){
+        print!("A");
+    }else{
+        print!("B");
+    }
     assert_eq!(true, false);
 }
 
