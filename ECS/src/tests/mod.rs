@@ -2,6 +2,7 @@ use entity::*;
 use entity::management::*;
 use component::*;
 use std::any::*;
+use std::collections::HashMap;
 
 struct StubComponentA {
     pub counter: u8
@@ -72,13 +73,12 @@ fn register_new_component(){
     //issue with dynamic typing.
     //look into any type
     //any type is the solution here, but need to figure out how to implement it into the EntityManager
-    let comp: Box<dyn Component> = Box::new(StubComponentA{counter: 0});
-    let typ = comp.get_type_id();
-    if typ == TypeId::of::<StubComponentA>(){
-        print!("A");
-    }else{
-        print!("B");
-    }
-    assert_eq!(true, false);
+    let comp = Box::new(StubComponentA{counter: 0});
+    let mut map: HashMap<TypeId, Box<Any>> = HashMap::new();
+    map.insert(TypeId::of::<StubComponentA>(), comp);
+    let typeid = TypeId::of::<StubComponentA>();
+    let comp = &map[&typeid];
+    let downcast = comp.downcast_ref::<StubComponentA>().unwrap();
+    assert_eq!(downcast.counter, 0);
 }
 
