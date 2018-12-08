@@ -64,15 +64,12 @@ impl Component for StubComponentB{
      let mut entity_manager: EntityStorage<StubComponentA> = EntityStorage::new();
      let index = entity_manager.register_new_entity();
      let index = entity_manager.add_component(index, StubComponentA {counter:0}).unwrap();
-     let result = entity_manager.deregister_entity(index);
+     let result = entity_manager.deallocate_entity(index);
      assert!(result.is_ok(), true);
  }
 
 #[test]
 fn register_new_component(){
-    //issue with dynamic typing.
-    //look into any type
-    //any type is the solution here, but need to figure out how to implement it into the EntityManager
     let comp = Box::new(StubComponentA{counter: 0});
     let mut map: HashMap<TypeId, Box<Any>> = HashMap::new();
     map.insert(TypeId::of::<StubComponentA>(), comp);
