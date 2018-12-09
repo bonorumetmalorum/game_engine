@@ -1,5 +1,4 @@
 use super::*;
-use component::*;
 use std::collections::HashMap;
 use std::any::TypeId;
 use std::any::Any;
@@ -18,7 +17,7 @@ pub struct EntityStorage {
 impl EntityStorage{
 
     pub fn register_new_entity(&mut self) -> EntityIndex {
-        if Some(x) = self.free_list.pop() {
+        if let Some(x) = self.free_list.pop() {
             self.entity_list[x] = Entry{is_live: true, generation: 0};
             (x, 0)
         }else{
@@ -44,11 +43,11 @@ impl EntityStorage{
         }
     }
 
-    pub fn add_component<T>(&mut self, index: EntityIndex, component: T) -> Result<EntityIndex, &str>{
+    pub fn add_component<T: 'static>(&mut self, index: EntityIndex, component: T) -> Result<EntityIndex, &str>{
         if index.1 == self.entity_list[index.0].generation {
-            if Some(comp) = self.storage.get_mut(&TypeId::of::<T>()) {
-                if None = comp[index.0] {
-                    comp[index.0] = Some(component);
+            if let Some(comp) = self.storage.get_mut(&TypeId::of::<T>()) {
+                if let None = comp[index.0] {
+                    comp[index.0] = Some(Box::new(component));
                     self.entity_list[index.0].generation += 1;
                     Ok((index.0, self.entity_list[index.0].generation))
                 } else {
@@ -62,25 +61,30 @@ impl EntityStorage{
         }
     }
 
-    pub fn remove_component(&mut self, index: EntityIndex) -> Result<EntityIndex, &str>{
-        if index.1 != self.generation {
+    pub fn remove_component<T: 'static>(&mut self, index: EntityIndex) -> Result<EntityIndex, &str>{
+        if index.1 != self.entity_list[index.0].generation {
             Err("incorrect generation")
         }else{
-            self.generation += 1;
-            self.storage[index.0] = None;
-            Ok((index.0, self.generation))
+            if let Some(x) = self.storage.get_mut(&TypeId::of::<T>()){
+                x[index.0] = None;
+                self.entity_list[index.0].generation += 1;
+            }
+            Ok((index.0, self.entity_list[index.0].generation))
         }
     }
 
-    pub fn fetch<T>(&mut self, id: EntityIndex) -> Result<&Option<T>, &str> {
-        if id.1 != self.generation{
+    pub fn fetch<T: 'static>(&mut self, id: EntityIndex) -> Result<Option<&mut T>, &str> {
+        if id.1 != self.entity_list[id.0].generation{
             Err("incorrect generation")
         }else{
-            Ok(&self.storage[id.0])
+            let component = self.storage.get_mut(&TypeId::of::<T>()).unwrap();
+            let unwrapped_component = component[id.0].as_mut().unwrap();
+            let downcast: Option<&mut T> = unwrapped_component.downcast_mut::<T>();
+            Ok(downcast)
         }
     }
 
     pub fn new() -> EntityStorage {
-        EntityStorage{storage: HashMap::new(), size: 0, free_list: Vec::new(), entity_list: Vec::new(), generation: 0}
+        EntityStorage{storage: HashMap::new(), free_list: Vec::new(), entity_list: Vec::new()}
     }
 }
