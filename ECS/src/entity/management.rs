@@ -12,17 +12,19 @@ pub struct EntityStorage {
     pub storage: HashMap<TypeId, Vec<Option<Box<Any>>>>,
     pub entity_list: Vec<Entry>,
     pub free_list: Vec<usize>,
+    pub size: usize
 }
 
 impl EntityStorage{
 
-    pub fn register_new_entity(&mut self) -> EntityIndex {
+    pub fn allocate_new_entity(&mut self) -> EntityIndex {
+        self.size += 1;
         if let Some(x) = self.free_list.pop() {
             self.entity_list[x] = Entry{is_live: true, generation: 0};
             (x, 0)
         }else{
             self.entity_list.push(Entry { is_live: true, generation: 0 });
-            let entity = (self.entity_list.len(), 0);
+            let entity = (self.entity_list.len() - 1, 0);
             for (_, component) in self.storage.iter_mut(){
                 component.push(None);
             }
@@ -31,6 +33,7 @@ impl EntityStorage{
     }
 
     pub fn deallocate_entity(&mut self, id: EntityIndex) -> Result<(), &str> {
+        self.size -= 1;
         if id.1 == self.entity_list[id.0].generation {
             self.entity_list[id.0].is_live = false;
             self.free_list.push(id.0);
@@ -54,7 +57,11 @@ impl EntityStorage{
                     Err("unable to add component")
                 }
             } else {
-                Err("no component of this type")
+                let mut component_storage: Vec<T> = Vec::with_capacity(self.size);
+                component_storage[index.0] = component;
+                self.storage.insert(TypeId::of::<T>(), component_storage);
+                self.entity_list[index.0].generation += 1;
+                Ok((index.0, self.entity_list[index.0].generation))
             }
         }else{
             Err("incorrect generation")
@@ -85,6 +92,6 @@ impl EntityStorage{
     }
 
     pub fn new() -> EntityStorage {
-        EntityStorage{storage: HashMap::new(), free_list: Vec::new(), entity_list: Vec::new()}
+        EntityStorage{storage: HashMap::new(), free_list: Vec::new(), entity_list: Vec::new(), size: 0}
     }
 }
