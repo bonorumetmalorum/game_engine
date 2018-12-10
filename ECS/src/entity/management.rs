@@ -49,22 +49,31 @@ impl EntityStorage{
     pub fn add_component<T: 'static>(&mut self, index: EntityIndex, component: T) -> Result<EntityIndex, &str>{
         if index.1 == self.entity_list[index.0].generation {
             if let Some(comp) = self.storage.get_mut(&TypeId::of::<T>()) {
-                if let None = comp[index.0] {
+                if let Some(None) = comp.get_mut(index.0) {
                     comp[index.0] = Some(Box::new(component));
                     self.entity_list[index.0].generation += 1;
                     Ok((index.0, self.entity_list[index.0].generation))
                 } else {
-                    Err("unable to add component")
+                    Err("entity does not exist")
                 }
             } else {
-                let mut component_storage: Vec<T> = Vec::with_capacity(self.size);
-                component_storage[index.0] = component;
-                self.storage.insert(TypeId::of::<T>(), component_storage);
-                self.entity_list[index.0].generation += 1;
-                Ok((index.0, self.entity_list[index.0].generation))
+                    Err("unregistered component, please register before adding")
             }
         }else{
             Err("incorrect generation")
+        }
+    }
+
+    pub fn register_new_component<T: 'static>(&mut self) -> Result<usize, &str> {
+        let mut component_storage: Vec<Option<Box<Any>>> = Vec::with_capacity(self.size);
+        for i in 0 .. self.size {
+            component_storage.push(None);
+        }
+        let size = component_storage.len();
+        if let None = self.storage.insert(TypeId::of::<T>(), component_storage) {
+            Ok(size)
+        }else{
+            Err("overwritten existing component storage")
         }
     }
 
