@@ -81,3 +81,13 @@ fn register_new_component(){
     assert_eq!(res2, 1)
 }
 
+#[test]
+fn get_component_test(){
+    let mut entity_manager = EntityStorage::new();
+    let res1 = entity_manager.allocate_new_entity();
+    entity_manager.register_new_component::<StubComponentA>();
+    let res3 = entity_manager.add_component(res1, StubComponentA{counter: 0}).unwrap();
+    let mut comp = entity_manager.fetch::<StubComponentA>(res3).unwrap();
+    assert_eq!(comp.unwrap().counter, 0);
+}
+
