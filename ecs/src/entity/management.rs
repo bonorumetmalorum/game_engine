@@ -66,7 +66,7 @@ impl EntityStorage{
 
     pub fn register_new_component<T: 'static>(&mut self) -> Result<usize, &str> {
         let mut component_storage: Vec<Option<Box<Any>>> = Vec::with_capacity(self.size);
-        for i in 0 .. self.size {
+        for _i in 0 .. self.size {
             component_storage.push(None);
         }
         let size = component_storage.len();
