@@ -6,7 +6,16 @@ rust:
 script:
   - cargo build --verbose --all
   - cargo test --verbose --all
+  - cargo bench
 
 branches:
   only:
   - master
+  - benchmark
+
+addons:
+  artifacts: true
+    s3_region: "eu-central-1"
+    paths:
+      - ./ecs/target/criterion
+    debug: true
