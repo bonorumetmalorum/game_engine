@@ -13,6 +13,6 @@ branches:
   - master
 
 addons:
-  artifacts: true
+  artifacts:
     s3_region: "eu-central-1"
     debug: true
