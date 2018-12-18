@@ -17,5 +17,5 @@ branches:
 
 addons:
   artifacts:
-    s3_region: "eu-central-1"
+    s3_region: "eu-west-1"
     debug: true
