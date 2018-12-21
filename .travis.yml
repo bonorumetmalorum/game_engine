@@ -3,10 +3,19 @@ language: rust
 rust:
   - stable
 
+before_install:
+  - sudo apt-get install gnuplot
+
 script:
   - cargo build --verbose --all
   - cargo test --verbose --all
+  - cargo bench
 
 branches:
   only:
   - master
+
+addons:
+  artifacts:
+    s3_region: "eu-west-1"
+    debug: true

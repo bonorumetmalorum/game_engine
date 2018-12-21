@@ -1,7 +1,5 @@
 use super::*;
-use std::collections::HashMap;
-use std::any::TypeId;
-use std::any::Any;
+use component::*;
 
 //entry to define an allocation into a generational data structure
 pub struct Entry {
@@ -53,6 +51,9 @@ impl EntityStorage{
             Ok(())
         }else{
             Err("incorrect generation")
+        } else{
+            self.generation += 1;
+            Ok(self.storage[id.0].take().unwrap())
         }
     }
 
@@ -90,7 +91,9 @@ impl EntityStorage{
         if let None = self.storage.insert(TypeId::of::<T>(), component_storage) {
             Ok(size)
         }else{
-            Err("overwritten existing component storage")
+            self.generation += 1;
+            self.storage[index.0] = Some(component);
+            Ok((index.0, self.generation))
         }
     }
 
@@ -101,11 +104,9 @@ impl EntityStorage{
         if index.1 != self.entity_list[index.0].generation {
             Err("incorrect generation")
         }else{
-            if let Some(x) = self.storage.get_mut(&TypeId::of::<T>()){
-                x[index.0] = None;
-                self.entity_list[index.0].generation += 1;
-            }
-            Ok((index.0, self.entity_list[index.0].generation))
+            self.generation += 1;
+            self.storage[index.0] = None;
+            Ok((index.0, self.generation))
         }
     }
 
@@ -116,10 +117,7 @@ impl EntityStorage{
         if id.1 != self.entity_list[id.0].generation{
             Err("incorrect generation")
         }else{
-            let component = self.storage.get_mut(&TypeId::of::<T>()).unwrap();
-            let unwrapped_component = component[id.0].as_mut().unwrap();
-            let downcast: Option<&mut T> = unwrapped_component.downcast_mut::<T>();
-            Ok(downcast)
+            Ok(&self.storage[id.0])
         }
     }
 
