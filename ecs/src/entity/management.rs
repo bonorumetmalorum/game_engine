@@ -1,4 +1,5 @@
 use super::*;
+use component::*;
 use std::collections::HashMap;
 use std::any::TypeId;
 use std::any::Any;
