@@ -19,6 +19,10 @@ pub struct EntityStorage {
 
 impl EntityStorage{
 
+    /*
+    allocate a new empty entity
+    creates a vec full of nones
+    */
     pub fn allocate_new_entity(&mut self) -> EntityIndex {
         self.size += 1;
         if let Some(x) = self.free_list.pop() {
@@ -34,6 +38,10 @@ impl EntityStorage{
         }
     }
 
+    /*
+    removes an entity, returning its index to the pool for a new entity to be allocated
+    removes all of its components
+    */
     pub fn deallocate_entity(&mut self, id: EntityIndex) -> Result<(), &str> {
         self.size -= 1;
         if id.1 == self.entity_list[id.0].generation {
@@ -48,6 +56,10 @@ impl EntityStorage{
         }
     }
 
+    /*
+    adds a component to an entity
+    if the component has not been registered to the manager, it will panic
+    */
     pub fn add_component<T: 'static>(&mut self, index: EntityIndex, component: T) -> Result<EntityIndex, &str>{
         if index.1 == self.entity_list[index.0].generation {
             if let Some(comp) = self.storage.get_mut(&TypeId::of::<T>()) {
@@ -66,6 +78,9 @@ impl EntityStorage{
         }
     }
 
+    /*
+    register a new component to the manager
+    */
     pub fn register_new_component<T: 'static>(&mut self) -> Result<usize, &str> {
         let mut component_storage: Vec<Option<Box<Any>>> = Vec::with_capacity(self.size);
         for _i in 0 .. self.size {
@@ -79,6 +94,9 @@ impl EntityStorage{
         }
     }
 
+    /*
+        remove a component from an entity
+    */
     pub fn remove_component<T: 'static>(&mut self, index: EntityIndex) -> Result<EntityIndex, &str>{
         if index.1 != self.entity_list[index.0].generation {
             Err("incorrect generation")
@@ -91,6 +109,9 @@ impl EntityStorage{
         }
     }
 
+    /*
+    gives a mutable reference to an entities component for updating
+    */
     pub fn fetch<T: 'static>(&mut self, id: EntityIndex) -> Result<Option<&mut T>, &str> {
         if id.1 != self.entity_list[id.0].generation{
             Err("incorrect generation")
@@ -102,6 +123,9 @@ impl EntityStorage{
         }
     }
 
+    /*
+    returns a new empty entity storage
+    */
     pub fn new() -> EntityStorage {
         EntityStorage{storage: HashMap::new(), free_list: Vec::new(), entity_list: Vec::new(), size: 0}
     }
