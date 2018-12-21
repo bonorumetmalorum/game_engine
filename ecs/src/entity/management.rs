@@ -3,11 +3,13 @@ use std::collections::HashMap;
 use std::any::TypeId;
 use std::any::Any;
 
+//entry to define an allocation into a generational data structure
 pub struct Entry {
     pub is_live: bool,
     pub generation: u64
 }
 
+//generational data structure
 pub struct EntityStorage {
     pub storage: HashMap<TypeId, Vec<Option<Box<Any>>>>,
     pub entity_list: Vec<Entry>,
