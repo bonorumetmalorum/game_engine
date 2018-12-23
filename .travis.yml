@@ -3,6 +3,9 @@ language: rust
 rust:
   - stable
 
+before_install:
+  - sudo apt-get install gnuplot
+
 script:
   - cargo build --verbose --all
   - cargo test --verbose --all
@@ -11,11 +14,8 @@ script:
 branches:
   only:
   - master
-  - benchmark
 
 addons:
-  artifacts: true
-    s3_region: "eu-central-1"
-    paths:
-      - ./ecs/target/criterion
+  artifacts:
+    s3_region: "eu-west-1"
     debug: true

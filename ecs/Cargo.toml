@@ -3,9 +3,9 @@ name = "ecs"
 version = "0.1.0"
 authors = ["Govind Venkatesh <venkateshgovind1@gmail.com>"]
 
-[dev-dependencies]
-criterion = "0.2"
+[dependencies]
+criterion = "0.2.5"
 
 [[bench]]
-name = "ecs_benchmark"
 harness = false
+name = "ecs_benchmark"
