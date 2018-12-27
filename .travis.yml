@@ -19,3 +19,5 @@ addons:
   artifacts:
     s3_region: "eu-west-1"
     debug: true
+    target_paths:
+      - /${TRAVIS_BUILD_NUMBER}/${TRAVIS_JOB_NUMBER}
