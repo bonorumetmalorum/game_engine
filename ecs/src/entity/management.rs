@@ -43,7 +43,7 @@ impl EntityStorage{
     removes an entity, returning its index to the pool for a new entity to be allocated
     removes all of its components
     */
-    pub fn deallocate_entity(&mut self, id: EntityIndex) -> Result<(), &str> {
+    pub fn deallocate_entity<'a>(&mut self, id: EntityIndex) -> Result<(), &'a str> {
         self.size -= 1;
         if id.1 == self.entity_list[id.0].generation {
             self.entity_list[id.0].is_live = false;
@@ -61,7 +61,7 @@ impl EntityStorage{
     adds a component to an entity
     if the component has not been registered to the manager, it will panic
     */
-    pub fn add_component<T: 'static>(&mut self, index: EntityIndex, component: T) -> Result<EntityIndex, &str>{
+    pub fn add_component<'a, T: 'static>(&mut self, index: EntityIndex, component: T) -> Result<EntityIndex, &'a str>{
         if index.1 == self.entity_list[index.0].generation {
             if let Some(comp) = self.storage.get_mut(&TypeId::of::<T>()) {
                 if let Some(None) = comp.get_mut(index.0) {
@@ -82,7 +82,7 @@ impl EntityStorage{
     /*
     register a new component to the manager
     */
-    pub fn register_new_component<T: 'static>(&mut self) -> Result<usize, &str> {
+    pub fn register_new_component<'a, T: 'static>(&mut self) -> Result<usize, &'a str> {
         let mut component_storage: Vec<Option<Box<Any>>> = Vec::with_capacity(self.size);
         for _i in 0 .. self.size {
             component_storage.push(None);
@@ -98,7 +98,7 @@ impl EntityStorage{
     /*
         remove a component from an entity
     */
-    pub fn remove_component<T: 'static>(&mut self, index: EntityIndex) -> Result<EntityIndex, &str>{
+    pub fn remove_component<'a, T: 'static>(&mut self, index: EntityIndex) -> Result<EntityIndex, &'a str>{
         if index.1 != self.entity_list[index.0].generation {
             Err("incorrect generation")
         }else{
@@ -113,7 +113,7 @@ impl EntityStorage{
     /*
     gives a mutable reference to an entities component for updating
     */
-    pub fn fetch<T: 'static>(&mut self, id: EntityIndex) -> Result<Option<&mut T>, &str> {
+    pub fn fetch<'a, T: 'static>(& mut self, id: EntityIndex) -> Result<Option<&mut T>, &'a str> {
         if id.1 != self.entity_list[id.0].generation{
             Err("incorrect generation")
         }else{
