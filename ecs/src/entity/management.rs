@@ -113,7 +113,7 @@ impl EntityStorage{
     /*
     gives a mutable reference to an entities component for updating
     */
-    pub fn fetch<'a, T: 'static>(& mut self, id: EntityIndex) -> Result<Option<&mut T>, &'a str> {
+    pub fn fetch<T: 'static>(& mut self, id: EntityIndex) -> Result<Option<&mut T>, &str> {
         if id.1 != self.entity_list[id.0].generation{
             Err("incorrect generation")
         }else{
