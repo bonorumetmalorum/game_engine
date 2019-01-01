@@ -1,0 +1,16 @@
+[package]
+name = "game"
+version = "0.1.0"
+authors = ["Govind Venkatesh <venakteshgovind1@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+gfx = "0.17.1"
+gfx-backend-vulkan = "0.1.0"
+gfx-hal = "0.1.0"
+conrod = "0.61.1"
+glutin = "0.19.0"
+conrod_winit = "0.62.0"
+gfx_window_glutin = "0.28.0"
+conrod_gfx = "0.62.0"
+conrod_core = "0.62.0"
