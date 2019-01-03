@@ -6,9 +6,11 @@ extern crate glutin;
 extern crate conrod_winit;
 extern crate conrod_gfx;
 extern crate conrod_core;
+extern crate tobj;
 
 use self::conrod_winit::winit;
 use gfx::Device;
+use std::path::Path;
 
 fn main() {
     let builder = glutin::WindowBuilder::new().with_title("Game Engine").with_dimensions((800, 800).into());
@@ -26,6 +28,8 @@ fn main() {
     let mut ui = conrod_core::UiBuilder::new([800 as f64, 800 as f64]).build();
 
     let mut image_map = conrod_core::image::Map::new();
+
+    let (models, materials) = tobj::load_obj(Path::new("../assets/glasses.obj")).unwrap();
 
     'main: loop{
         let (win_1, win_h): (u32, u32) = match window.get_inner_size() {
