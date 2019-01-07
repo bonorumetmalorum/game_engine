@@ -10,10 +10,46 @@ pub struct Entry {
     pub generation: u64
 }
 
+//the reason for this abstraction is to allow for the Iterator trait to be implemented on this data structure.
+pub struct EntityAllocator {
+    pub entity_list: Vec<Entry>,
+    pub free_list: Vec<usize>,
+    pub size: usize
+}
+
+impl EntityAllocator {
+    pub fn allocate(&mut self) -> EntityIndex {
+        self.size += 1;
+        if let Some(x) = self.free_list.pop() {
+            self.entity_list[x] = Entry{is_live: true, generation: 0};
+            (x, 0)
+        }else{
+            self.entity_list.push(Entry { is_live: true, generation: 0 });
+            let entity = (self.entity_list.len() - 1, 0);
+            for (_, component) in self.storage.iter_mut(){
+                component.push(None);
+            }
+            entity
+        }
+    }
+
+    pub fn deallocate(&mut self) -> Result<(), &str> {
+        self.size -= 1;
+        if id.1 == self.entity_list[id.0].generation {
+            self.entity_list[id.0].is_live = false;
+            self.free_list.push(id.0);
+            Ok(())
+        }else{
+            Err("incorrect generation")
+        }
+    }
+
+}
+
 //generational data structure
 pub struct EntityStorage {
     pub storage: HashMap<TypeId, Vec<Option<Box<Any>>>>,
-    pub entity_list: Vec<Entry>,
+    pub entity_list: EntityAllocator,
     pub free_list: Vec<usize>,
     pub size: usize
 }
@@ -122,6 +158,13 @@ impl EntityStorage{
             let downcast: Option<&mut T> = unwrapped_component.downcast_mut::<T>();
             Ok(downcast)
         }
+    }
+
+    pub fn find_entities()  {
+        /*
+        this method needs to return an iterator which will go through each entity that meets the condition (has the components)
+        */
+        unimplemented!()
     }
 
     /*
