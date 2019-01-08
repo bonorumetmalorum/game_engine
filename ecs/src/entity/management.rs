@@ -14,27 +14,22 @@ pub struct Entry {
 pub struct EntityAllocator {
     pub entity_list: Vec<Entry>,
     pub free_list: Vec<usize>,
-    pub size: usize
 }
 
 impl EntityAllocator {
     pub fn allocate(&mut self) -> EntityIndex {
-        self.size += 1;
         if let Some(x) = self.free_list.pop() {
-            self.entity_list[x] = Entry{is_live: true, generation: 0};
-            (x, 0)
+            let mut index = &mut self.entity_list[x];
+            index.is_live = true;
+            index.generation += 1;
+            (x, index.generation)
         }else{
             self.entity_list.push(Entry { is_live: true, generation: 0 });
-            let entity = (self.entity_list.len() - 1, 0);
-            for (_, component) in self.storage.iter_mut(){
-                component.push(None);
-            }
             entity
         }
     }
 
-    pub fn deallocate(&mut self) -> Result<(), &str> {
-        self.size -= 1;
+    pub fn deallocate(&mut self, id: EntityIndex) -> Result<(), &str> {
         if id.1 == self.entity_list[id.0].generation {
             self.entity_list[id.0].is_live = false;
             self.free_list.push(id.0);
@@ -43,7 +38,6 @@ impl EntityAllocator {
             Err("incorrect generation")
         }
     }
-
 }
 
 //generational data structure
@@ -62,17 +56,9 @@ impl EntityStorage{
     */
     pub fn allocate_new_entity(&mut self) -> EntityIndex {
         self.size += 1;
-        if let Some(x) = self.free_list.pop() {
-            self.entity_list[x] = Entry{is_live: true, generation: 0};
-            (x, 0)
-        }else{
-            self.entity_list.push(Entry { is_live: true, generation: 0 });
-            let entity = (self.entity_list.len() - 1, 0);
-            for (_, component) in self.storage.iter_mut(){
-                component.push(None);
-            }
-            entity
-        }
+        let entity = self.entity_list.allocate();
+        
+        entity
     }
 
     /*
