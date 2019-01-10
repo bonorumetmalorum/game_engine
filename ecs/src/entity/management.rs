@@ -57,7 +57,9 @@ impl EntityStorage{
     pub fn allocate_new_entity(&mut self) -> EntityIndex {
         self.size += 1;
         let entity = self.entity_list.allocate();
-        
+        for (_ , mut val) in self.storage {
+            val.push(None);
+        }
         entity
     }
 
@@ -68,10 +70,10 @@ impl EntityStorage{
     pub fn deallocate_entity(&mut self, id: EntityIndex) -> Result<(), &str> {
         self.size -= 1;
         if id.1 == self.entity_list[id.0].generation {
-            self.entity_list[id.0].is_live = false;
-            self.free_list.push(id.0);
-            for (_, component) in self.storage.iter_mut(){
-                component[id.0] = None;
+            let entity = self.entity_list.deallocate(id);
+            match entity {
+                Ok(_) => for (_, mut comp) in self.storage {comp[id.0] = None},
+                Err(_) =>  Err("error deallocating entity")
             }
             Ok(())
         }else{
