@@ -1,8 +1,8 @@
 use super::*;
-use component::*;
 use std::collections::HashMap;
 use std::any::TypeId;
 use std::any::Any;
+use core::borrow::BorrowMut;
 
 //entry to define an allocation into a generational data structure
 pub struct Entry {
@@ -17,6 +17,14 @@ pub struct EntityAllocator {
 }
 
 impl EntityAllocator {
+
+    pub fn new() -> EntityAllocator {
+        EntityAllocator{
+            entity_list: Vec::new(),
+            free_list: Vec::new()
+        }
+    }
+
     pub fn allocate(&mut self) -> EntityIndex {
         if let Some(x) = self.free_list.pop() {
             let mut index = &mut self.entity_list[x];
@@ -25,7 +33,7 @@ impl EntityAllocator {
             (x, index.generation)
         }else{
             self.entity_list.push(Entry { is_live: true, generation: 0 });
-            entity
+            (self.entity_list.len() - 1, 0)
         }
     }
 
@@ -44,7 +52,6 @@ impl EntityAllocator {
 pub struct EntityStorage {
     pub storage: HashMap<TypeId, Vec<Option<Box<Any>>>>,
     pub entity_list: EntityAllocator,
-    pub free_list: Vec<usize>,
     pub size: usize
 }
 
@@ -52,13 +59,14 @@ impl EntityStorage{
 
     /*
     allocate a new empty entity
-    creates a vec full of nones
     */
     pub fn allocate_new_entity(&mut self) -> EntityIndex {
         self.size += 1;
         let entity = self.entity_list.allocate();
-        for (_ , mut val) in self.storage {
-            val.push(None);
+        if entity.1 == 0 {
+            for (_, val) in self.storage.borrow_mut() {
+                val.push(None);
+            }
         }
         entity
     }
@@ -69,13 +77,12 @@ impl EntityStorage{
     */
     pub fn deallocate_entity(&mut self, id: EntityIndex) -> Result<(), &str> {
         self.size -= 1;
-        if id.1 == self.entity_list[id.0].generation {
+        if id.1 == self.entity_list.entity_list[id.0].generation && self.entity_list.entity_list[id.0].is_live{
             let entity = self.entity_list.deallocate(id);
             match entity {
-                Ok(_) => for (_, mut comp) in self.storage {comp[id.0] = None},
-                Err(_) =>  Err("error deallocating entity")
+                Ok(_) => {for (_, comp) in self.storage.borrow_mut() {comp[id.0] = None}; Ok(())},
+                Err(e) =>  Err(e)
             }
-            Ok(())
         }else{
             Err("incorrect generation")
         }
@@ -86,12 +93,11 @@ impl EntityStorage{
     if the component has not been registered to the manager, it will panic
     */
     pub fn add_component<T: 'static>(&mut self, index: EntityIndex, component: T) -> Result<EntityIndex, &str>{
-        if index.1 == self.entity_list[index.0].generation {
+        if index.1 == self.entity_list.entity_list[index.0].generation && self.entity_list.entity_list[index.0].is_live {
             if let Some(comp) = self.storage.get_mut(&TypeId::of::<T>()) {
                 if let Some(None) = comp.get_mut(index.0) {
                     comp[index.0] = Some(Box::new(component));
-                    self.entity_list[index.0].generation += 1;
-                    Ok((index.0, self.entity_list[index.0].generation))
+                    Ok(index)
                 } else {
                     Err("entity does not exist")
                 }
@@ -123,14 +129,13 @@ impl EntityStorage{
         remove a component from an entity
     */
     pub fn remove_component<T: 'static>(&mut self, index: EntityIndex) -> Result<EntityIndex, &str>{
-        if index.1 != self.entity_list[index.0].generation {
-            Err("incorrect generation")
+        if index.1 != self.entity_list.entity_list[index.0].generation && !self.entity_list.entity_list[index.0].is_live {
+            Err("invalid index")
         }else{
             if let Some(x) = self.storage.get_mut(&TypeId::of::<T>()){
                 x[index.0] = None;
-                self.entity_list[index.0].generation += 1;
             }
-            Ok((index.0, self.entity_list[index.0].generation))
+            Ok(index)
         }
     }
 
@@ -138,7 +143,7 @@ impl EntityStorage{
     gives a mutable reference to an entities component for updating
     */
     pub fn fetch<T: 'static>(&mut self, id: EntityIndex) -> Result<Option<&mut T>, &str> {
-        if id.1 != self.entity_list[id.0].generation{
+        if id.1 != self.entity_list.entity_list[id.0].generation && !self.entity_list.entity_list[id.0].is_live{
             Err("incorrect generation")
         }else{
             let component = self.storage.get_mut(&TypeId::of::<T>()).unwrap();
@@ -159,6 +164,6 @@ impl EntityStorage{
     returns a new empty entity storage
     */
     pub fn new() -> EntityStorage {
-        EntityStorage{storage: HashMap::new(), free_list: Vec::new(), entity_list: Vec::new(), size: 0}
+        EntityStorage{storage: HashMap::new(), entity_list: EntityAllocator::new(), size: 0}
     }
 }
