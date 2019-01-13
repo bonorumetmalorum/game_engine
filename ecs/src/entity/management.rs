@@ -10,7 +10,7 @@ pub struct Entry {
     pub generation: u64
 }
 
-//the reason for this abstraction is to allow for the Iterator trait to be implemented on this data structure.
+//the reason for this abstraction is to allow for the Iterator trait to be implemented on this data structure. easily...
 pub struct EntityAllocator {
     pub entity_list: Vec<Entry>,
     pub free_list: Vec<usize>,
@@ -45,6 +45,36 @@ impl EntityAllocator {
         }else{
             Err("incorrect generation")
         }
+    }
+}
+
+pub struct ComponentStorage{storage: HashMap<TypeId, Vec<Option<Box<Any>>>>, max_size: usize};
+
+impl ComponentStorage {
+
+    pub fn register_component<T:'static>(&mut self) -> Result<usize, &str>{
+        let mut component_storage: Vec<Option<Box<Any>>> = Vec::with_capacity(self.max_size);
+        for _i in 0 .. self.size {
+            component_storage.push(None);
+        }
+        let size = component_storage.len();
+        if let None = self.storage.insert(TypeId::of::<T>(), component_storage) {
+            Ok(size)
+        }else{
+            Err("overwritten existing component storage")
+        }
+    }
+
+    pub fn add_component<T:'static>(&mut self, component: T, id: EntityIndex) {
+
+    }
+
+    pub fn remove_component<T:'static>(&mut self, id: EntityIndex){
+
+    }
+
+    pub fn fetch_component<T:'static>(&mut self, id: EntityIndex){
+
     }
 }
 
