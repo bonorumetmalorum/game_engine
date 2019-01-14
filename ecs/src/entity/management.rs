@@ -48,16 +48,12 @@ impl EntityAllocator {
     }
 }
 
-pub struct ComponentStorage{storage: HashMap<TypeId, Vec<Option<Box<Any>>>>, max_size: usize};
+pub struct ComponentStorage(HashMap<TypeId, Vec<Option<Box<Any>>>>);
 
 impl ComponentStorage {
 
     pub fn register_component<T:'static>(&mut self) -> Result<usize, &str>{
-        let mut component_storage: Vec<Option<Box<Any>>> = Vec::with_capacity(self.max_size);
-        for _i in 0 .. self.size {
-            component_storage.push(None);
-        }
-        let size = component_storage.len();
+        let mut component_storage: Vec<Option<Box<Any>>> = Vec::new();
         if let None = self.storage.insert(TypeId::of::<T>(), component_storage) {
             Ok(size)
         }else{
@@ -65,16 +61,29 @@ impl ComponentStorage {
         }
     }
 
-    pub fn add_component<T:'static>(&mut self, component: T, id: EntityIndex) {
-
+    pub fn add_component<T:'static>(&mut self, component: T, id: EntityIndex) -> Result<EntityIndex, &str> {
+        if let Some(storage) = self.0.get_mut(&TypeId::of::<T>()){
+            while id.0 >= storage.len() {
+                storage.push(None);
+            }
+            storage[id.0] = component;
+            Ok(id)
+        }else{
+            Err("component is not registered")
+        }
     }
 
-    pub fn remove_component<T:'static>(&mut self, id: EntityIndex){
-
-    }
-
-    pub fn fetch_component<T:'static>(&mut self, id: EntityIndex){
-
+    pub fn remove_component<T:'static>(&mut self, id: EntityIndex) -> Result<EntityIndex, &str>{
+        if let Some(storage) = self.0.get_mut(&TypeId::of::<T>()){
+            if id.0 >= storage.length {
+                Err("entity does not have component")
+            }else{
+                storage[id.0] = None;
+                Ok(id)
+            }
+        }else{
+            Err("component is not registered")
+        }
     }
 }
 
