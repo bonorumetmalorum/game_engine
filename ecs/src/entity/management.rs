@@ -52,10 +52,14 @@ pub struct ComponentStorage(HashMap<TypeId, Vec<Option<Box<Any>>>>);
 
 impl ComponentStorage {
 
-    pub fn register_component<T:'static>(&mut self) -> Result<usize, &str>{
-        let mut component_storage: Vec<Option<Box<Any>>> = Vec::new();
-        if let None = self.storage.insert(TypeId::of::<T>(), component_storage) {
-            Ok(size)
+    pub fn new() -> ComponentStorage {
+        ComponentStorage(HashMap::new())
+    }
+
+    pub fn register_component<T:'static>(&mut self) -> Result<(), &str>{
+        let component_storage: Vec<Option<Box<Any>>> = Vec::new();
+        if let None = self.0.insert(TypeId::of::<T>(), component_storage) {
+            Ok(())
         }else{
             Err("overwritten existing component storage")
         }
@@ -66,7 +70,7 @@ impl ComponentStorage {
             while id.0 >= storage.len() {
                 storage.push(None);
             }
-            storage[id.0] = component;
+            storage[id.0] = Some(Box::new(component));
             Ok(id)
         }else{
             Err("component is not registered")
@@ -75,7 +79,7 @@ impl ComponentStorage {
 
     pub fn remove_component<T:'static>(&mut self, id: EntityIndex) -> Result<EntityIndex, &str>{
         if let Some(storage) = self.0.get_mut(&TypeId::of::<T>()){
-            if id.0 >= storage.length {
+            if id.0 >= storage.len() {
                 Err("entity does not have component")
             }else{
                 storage[id.0] = None;
@@ -85,11 +89,15 @@ impl ComponentStorage {
             Err("component is not registered")
         }
     }
+
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
 }
 
 //generational data structure
 pub struct EntityStorage {
-    pub storage: HashMap<TypeId, Vec<Option<Box<Any>>>>,
+    pub storage: ComponentStorage,
     pub entity_list: EntityAllocator,
     pub size: usize
 }
@@ -102,11 +110,6 @@ impl EntityStorage{
     pub fn allocate_new_entity(&mut self) -> EntityIndex {
         self.size += 1;
         let entity = self.entity_list.allocate();
-        if entity.1 == 0 {
-            for (_, val) in self.storage.borrow_mut() {
-                val.push(None);
-            }
-        }
         entity
     }
 
@@ -119,7 +122,7 @@ impl EntityStorage{
         if id.1 == self.entity_list.entity_list[id.0].generation && self.entity_list.entity_list[id.0].is_live{
             let entity = self.entity_list.deallocate(id);
             match entity {
-                Ok(_) => {for (_, comp) in self.storage.borrow_mut() {comp[id.0] = None}; Ok(())},
+                Ok(_) => {for (_, comp) in self.storage.0.borrow_mut() {comp[id.0] = None}; Ok(())},
                 Err(e) =>  Err(e)
             }
         }else{
@@ -133,7 +136,7 @@ impl EntityStorage{
     */
     pub fn add_component<T: 'static>(&mut self, index: EntityIndex, component: T) -> Result<EntityIndex, &str>{
         if index.1 == self.entity_list.entity_list[index.0].generation && self.entity_list.entity_list[index.0].is_live {
-            if let Some(comp) = self.storage.get_mut(&TypeId::of::<T>()) {
+            if let Some(comp) = self.storage.0.get_mut(&TypeId::of::<T>()) {
                 if let Some(None) = comp.get_mut(index.0) {
                     comp[index.0] = Some(Box::new(component));
                     Ok(index)
@@ -157,7 +160,7 @@ impl EntityStorage{
             component_storage.push(None);
         }
         let size = component_storage.len();
-        if let None = self.storage.insert(TypeId::of::<T>(), component_storage) {
+        if let None = self.storage.0.insert(TypeId::of::<T>(), component_storage) {
             Ok(size)
         }else{
             Err("overwritten existing component storage")
@@ -171,7 +174,7 @@ impl EntityStorage{
         if index.1 != self.entity_list.entity_list[index.0].generation && !self.entity_list.entity_list[index.0].is_live {
             Err("invalid index")
         }else{
-            if let Some(x) = self.storage.get_mut(&TypeId::of::<T>()){
+            if let Some(x) = self.storage.0.get_mut(&TypeId::of::<T>()){
                 x[index.0] = None;
             }
             Ok(index)
@@ -181,16 +184,16 @@ impl EntityStorage{
     /*
     gives a mutable reference to an entities component for updating
     */
-    pub fn fetch<T: 'static>(&mut self, id: EntityIndex) -> Result<Option<&mut T>, &str> {
-        if id.1 != self.entity_list.entity_list[id.0].generation && !self.entity_list.entity_list[id.0].is_live{
-            Err("incorrect generation")
-        }else{
-            let component = self.storage.get_mut(&TypeId::of::<T>()).unwrap();
-            let unwrapped_component = component[id.0].as_mut().unwrap();
-            let downcast: Option<&mut T> = unwrapped_component.downcast_mut::<T>();
-            Ok(downcast)
-        }
-    }
+//    pub fn fetch<T: 'static>(&mut self, id: EntityIndex) -> Result<Option<&mut T>, &str> {
+//        if id.1 != self.entity_list.entity_list[id.0].generation && !self.entity_list.entity_list[id.0].is_live{
+//            Err("incorrect generation")
+//        }else{
+//            let component = self.storage.get_mut(&TypeId::of::<T>()).unwrap();
+//            let unwrapped_component = component[id.0].as_mut().unwrap();
+//            let downcast: Option<&mut T> = unwrapped_component.downcast_mut::<T>();
+//            Ok(downcast)
+//        }
+//    }
 
     pub fn find_entities()  {
         /*
@@ -203,6 +206,6 @@ impl EntityStorage{
     returns a new empty entity storage
     */
     pub fn new() -> EntityStorage {
-        EntityStorage{storage: HashMap::new(), entity_list: EntityAllocator::new(), size: 0}
+        EntityStorage{storage: ComponentStorage::new(), entity_list: EntityAllocator::new(), size: 0}
     }
 }
