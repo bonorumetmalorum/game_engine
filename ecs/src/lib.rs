@@ -13,13 +13,13 @@ use std::any::Any;
 use core::borrow::BorrowMut;
 
 //generational data structure
-pub struct EntityStorage {
+pub struct ECS {
     pub storage: ComponentStorage,
     pub entity_list: EntityAllocator,
     pub size: usize
 }
 
-impl EntityStorage{
+impl ECS {
 
     /*
     allocate a new empty entity
@@ -39,7 +39,7 @@ impl EntityStorage{
         if id.1 == self.entity_list.entity_list[id.0].generation && self.entity_list.entity_list[id.0].is_live{
             let entity = self.entity_list.deallocate(id);
             match entity {
-                Ok(_) => {for (_, comp) in self.storage.0.borrow_mut() {comp[id.0] = None}; Ok(())},
+                Ok(_) => {self.storage.clear_entity(id)},
                 Err(e) =>  Err(e)
             }
         }else{
@@ -53,16 +53,7 @@ impl EntityStorage{
     */
     pub fn add_component<T: 'static>(&mut self, index: EntityIndex, component: T) -> Result<EntityIndex, &str>{
         if index.1 == self.entity_list.entity_list[index.0].generation && self.entity_list.entity_list[index.0].is_live {
-            if let Some(comp) = self.storage.0.get_mut(&TypeId::of::<T>()) {
-                if let Some(None) = comp.get_mut(index.0) {
-                    comp[index.0] = Some(Box::new(component));
-                    Ok(index)
-                } else {
-                    Err("entity does not exist")
-                }
-            } else {
-                Err("unregistered component, please register before adding")
-            }
+            self.storage.add_component(component, index)
         }else{
             Err("incorrect generation")
         }
@@ -77,11 +68,7 @@ impl EntityStorage{
             component_storage.push(None);
         }
         let size = component_storage.len();
-        if let None = self.storage.0.insert(TypeId::of::<T>(), component_storage) {
-            Ok(size)
-        }else{
-            Err("overwritten existing component storage")
-        }
+        self.storage.register_component::<T>()
     }
 
     /*
@@ -91,10 +78,7 @@ impl EntityStorage{
         if index.1 != self.entity_list.entity_list[index.0].generation && !self.entity_list.entity_list[index.0].is_live {
             Err("invalid index")
         }else{
-            if let Some(x) = self.storage.0.get_mut(&TypeId::of::<T>()){
-                x[index.0] = None;
-            }
-            Ok(index)
+            self.storage.remove_component(index)
         }
     }
 
@@ -122,8 +106,8 @@ impl EntityStorage{
     /*
     returns a new empty entity storage
     */
-    pub fn new() -> EntityStorage {
-        EntityStorage{storage: ComponentStorage::new(), entity_list: EntityAllocator::new(), size: 0}
+    pub fn new() -> ECS {
+        ECS {storage: ComponentStorage::new(), entity_list: EntityAllocator::new(), size: 0}
     }
 }
 

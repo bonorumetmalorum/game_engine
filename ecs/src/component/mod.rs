@@ -2,10 +2,14 @@ use std::collections::HashMap;
 use std::any::TypeId;
 use std::any::Any;
 use entity::EntityIndex;
+use core::borrow::Borrow;
+use core::borrow::BorrowMut;
 
 pub trait Component{
     fn update(&mut self);
 }
+
+type Storage = Vec<Option<Box<Any>>>;
 
 pub struct ComponentStorage(HashMap<TypeId, Vec<Option<Box<Any>>>>);
 
@@ -15,10 +19,10 @@ impl ComponentStorage {
         ComponentStorage(HashMap::new())
     }
 
-    pub fn register_component<T:'static>(&mut self) -> Result<(), &str>{
+    pub fn register_component<T:'static>(&mut self) -> Result<(usize), &str>{
         let component_storage: Vec<Option<Box<Any>>> = Vec::new();
         if let None = self.0.insert(TypeId::of::<T>(), component_storage) {
-            Ok(())
+            Ok((component_storage.len()))
         }else{
             Err("overwritten existing component storage")
         }
@@ -49,14 +53,36 @@ impl ComponentStorage {
         }
     }
 
+    pub fn clear_entity(&mut self, id: EntityIndex) -> Result<(), &str> {
+        for (_, cs) in self.0.borrow_mut() {
+            if id.0 > cs.len() {
+                continue;
+            }else{
+                cs[id.0] = None;
+            }
+        }
+        Ok(())
+    }
+
+    pub fn get<T>(&self) -> &Vec<Option<Box<T>>> {
+        self.0.get(&TypeId::of::<T>())
+    }
+
+    pub fn get_mut<T>(&mut self) -> &mut Vec<Option<Box<T>>> {
+        &self.0[&TypeId::of::<T>()]
+    }
+
     pub fn len(&self) -> usize {
         self.0.len()
     }
 }
 
-impl Iterator for ComponentStorage {
-    type Item = //need to add abstraction here, a component scanner type which is instantiated with a type
-    fn next(&mut self) -> Option<<Self as Iterator>::Item> {
-        unimplemented!()
-    }
-}
+//pub struct ComponentIterator<'cs, T>{st: &'cs Storage, current_index: usize}
+//
+//impl<'cs, T> Iterator for ComponentIterator<'cs, T> {
+//    type Item = T;
+//
+//    fn next(&mut self) -> Option<&mut Self::Item> {
+//        self.st.get_mut(self.current_index)
+//    }
+//}
