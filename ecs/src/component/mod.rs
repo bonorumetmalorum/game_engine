@@ -4,6 +4,7 @@ use std::any::Any;
 use entity::EntityIndex;
 use core::borrow::Borrow;
 use core::borrow::BorrowMut;
+use std::slice;
 
 pub trait Component{
     fn update(&mut self);
@@ -21,8 +22,9 @@ impl ComponentStorage {
 
     pub fn register_component<T:'static>(&mut self) -> Result<(usize), &str>{
         let component_storage: Vec<Option<Box<Any>>> = Vec::new();
+        let len = component_storage.len();
         if let None = self.0.insert(TypeId::of::<T>(), component_storage) {
-            Ok((component_storage.len()))
+            Ok(len)
         }else{
             Err("overwritten existing component storage")
         }
@@ -64,12 +66,21 @@ impl ComponentStorage {
         Ok(())
     }
 
-    pub fn get<T>(&self) -> &Vec<Option<Box<T>>> {
-        self.0.get(&TypeId::of::<T>())
+    pub fn get<T: 'static>(&self) -> Result<&Vec<Option<Box<Any>>>, &str> {
+        if let Some(x) = self.0.get(&TypeId::of::<T>()){
+            Ok(x)
+        }else{
+            Err("unregistered type")
+        }
     }
 
-    pub fn get_mut<T>(&mut self) -> &mut Vec<Option<Box<T>>> {
-        &self.0[&TypeId::of::<T>()]
+    pub fn get_mut<T: 'static>(&mut self) -> Result<&mut Vec<Option<Box<Any>>>, &str> {
+        if let Some(x) = self.0.get_mut(&TypeId::of::<T>()){
+
+            Ok(x)
+        }else{
+            Err("unregistered type")
+        }
     }
 
     pub fn len(&self) -> usize {
@@ -77,12 +88,12 @@ impl ComponentStorage {
     }
 }
 
-//pub struct ComponentIterator<'cs, T>{st: &'cs Storage, current_index: usize}
-//
-//impl<'cs, T> Iterator for ComponentIterator<'cs, T> {
-//    type Item = T;
-//
-//    fn next(&mut self) -> Option<&mut Self::Item> {
-//        self.st.get_mut(self.current_index)
-//    }
-//}
+pub struct ComponentIterator<'cs, T: 'cs>{st: slice::IterMut<'cs, Option<T>>, current_index: usize}
+
+impl<'cs, T> ComponentIterator<'cs, T> {
+
+    fn next(&mut self) -> Option<&mut T> {
+        unimplemented!()
+    }
+
+}

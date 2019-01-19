@@ -78,7 +78,7 @@ impl ECS {
         if index.1 != self.entity_list.entity_list[index.0].generation && !self.entity_list.entity_list[index.0].is_live {
             Err("invalid index")
         }else{
-            self.storage.remove_component(index)
+            self.storage.remove_component::<T>(index)
         }
     }
 
