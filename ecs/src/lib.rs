@@ -10,6 +10,7 @@ use component::ComponentStorage;
 use entity::management::EntityAllocator;
 use entity::EntityIndex;
 use std::any::Any;
+use component::ComponentIterator;
 
 //generational data structure
 pub struct ECS {
@@ -94,11 +95,8 @@ impl ECS {
 //        }
 //    }
 
-    pub fn find_entities()  {
-        /*
-        this method needs to return an iterator which will go through each entity that meets the condition (has the components)
-        */
-        unimplemented!()
+    pub fn iterator<T>(&mut self) -> ComponentIterator<T>{
+        self.storage.get_iterator::<T>()
     }
 
     /*

@@ -79,6 +79,19 @@ fn register_new_component(){
     assert_eq!(res2, 0)
 }
 
+#[test]
+fn get_component_iterator(){
+    let mut entity_manager = ECS::new();
+    entity_manager.allocate_new_entity();
+    entity_manager.allocate_new_entity();
+    entity_manager.allocate_new_entity();
+    entity_manager.register_new_component::<StubComponentA>();
+    entity_manager.add_component((0,0), StubComponentA{ counter: 0 });
+    entity_manager.add_component((1,0), StubComponentA{ counter: 1 });
+    entity_manager.add_component((2,0), StubComponentA{ counter: 2 });
+    let mut it = entity_manager.iterator::<StubComponentA>();
+}
+
 //#[test]
 //fn get_component_test(){
 //    //

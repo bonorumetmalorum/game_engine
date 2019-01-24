@@ -9,7 +9,15 @@ pub trait Component{
     fn update(&mut self);
 }
 
-pub struct ComponentStorage(HashMap<TypeId, Vec<Option<Box<Any>>>>);
+trait ComponentEntry: 'static + Sized{}
+
+pub struct Empty;
+pub struct Entry(Box<Any>);
+
+impl ComponentEntry for Empty{}
+impl ComponentEntry for Entry{}
+
+pub struct ComponentStorage(HashMap<TypeId, Vec<ComponentEntry>>);
 
 impl ComponentStorage {
 
@@ -83,14 +91,31 @@ impl ComponentStorage {
     pub fn len(&self) -> usize {
         self.0.len()
     }
+
+    pub fn get_iterator<T>(&self) -> ComponentIterator<T>{
+        let it = self.0.get(&TypeId::of::<T>()).iter_mut();
+        ComponentIterator::new(it)
+    }
+
 }
 
-pub struct ComponentIterator<'cs, T: 'cs>{st: slice::IterMut<'cs, Option<T>>, current_index: usize}
+pub struct ComponentIterator<'cs, T: 'cs>{
+    st: slice::IterMut<'cs, Option<T>>,
+    current_index: usize
+}
 
 impl<'cs, T> ComponentIterator<'cs, T> {
 
+    fn new(it: slice::IterMut<'cs, T>) -> Self {
+        ComponentIterator{
+            st: it,
+            current_index: 0
+        }
+    }
+
     fn next(&mut self) -> Option<&mut T> {
-        unimplemented!()
+        self.current_index += 1;
+        self.st.next()
     }
 
 }
