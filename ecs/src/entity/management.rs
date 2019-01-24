@@ -1,10 +1,4 @@
 use super::*;
-use std::collections::HashMap;
-use std::any::TypeId;
-use std::any::Any;
-use core::borrow::BorrowMut;
-use component::ComponentStorage;
-
 //entry to define an allocation into a generational data structure
 pub struct Entry {
     pub is_live: bool,

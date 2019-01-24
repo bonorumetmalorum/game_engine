@@ -10,7 +10,6 @@ use component::ComponentStorage;
 use entity::management::EntityAllocator;
 use entity::EntityIndex;
 use std::any::Any;
-use core::borrow::BorrowMut;
 
 //generational data structure
 pub struct ECS {
@@ -67,7 +66,6 @@ impl ECS {
         for _i in 0 .. self.size {
             component_storage.push(None);
         }
-        let size = component_storage.len();
         self.storage.register_component::<T>()
     }
 

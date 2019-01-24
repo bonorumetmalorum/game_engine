@@ -2,15 +2,12 @@ use std::collections::HashMap;
 use std::any::TypeId;
 use std::any::Any;
 use entity::EntityIndex;
-use core::borrow::Borrow;
 use core::borrow::BorrowMut;
 use std::slice;
 
 pub trait Component{
     fn update(&mut self);
 }
-
-type Storage = Vec<Option<Box<Any>>>;
 
 pub struct ComponentStorage(HashMap<TypeId, Vec<Option<Box<Any>>>>);
 
