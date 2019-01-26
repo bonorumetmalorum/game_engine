@@ -95,8 +95,8 @@ impl ECS {
 //        }
 //    }
 
-    pub fn iterator<T>(&mut self) -> ComponentIterator<T>{
-        self.storage.get_iterator::<T>()
+    pub fn iterator<T: 'static>(&mut self) -> ComponentIterator{
+        self.storage.get_mut_iterator::<T>().expect("Error creating iterator")
     }
 
     /*

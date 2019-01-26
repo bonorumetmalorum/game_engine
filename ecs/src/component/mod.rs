@@ -5,17 +5,14 @@ use entity::EntityIndex;
 use core::borrow::BorrowMut;
 use std::slice;
 
-pub trait Component{
+pub trait Component: Any{
     fn update(&mut self);
 }
 
-trait ComponentEntry: 'static + Sized{}
-
-pub struct Empty;
-pub struct Entry(Box<Any>);
-
-impl ComponentEntry for Empty{}
-impl ComponentEntry for Entry{}
+pub enum ComponentEntry{
+    Empty,
+    Entry(Box<Any>)
+}
 
 pub struct ComponentStorage(HashMap<TypeId, Vec<ComponentEntry>>);
 
@@ -26,7 +23,7 @@ impl ComponentStorage {
     }
 
     pub fn register_component<T:'static>(&mut self) -> Result<(usize), &str>{
-        let component_storage: Vec<Option<Box<Any>>> = Vec::new();
+        let component_storage: Vec<ComponentEntry> = Vec::new();
         let len = component_storage.len();
         if let None = self.0.insert(TypeId::of::<T>(), component_storage) {
             Ok(len)
@@ -38,9 +35,9 @@ impl ComponentStorage {
     pub fn add_component<T:'static>(&mut self, component: T, id: EntityIndex) -> Result<EntityIndex, &str> {
         if let Some(storage) = self.0.get_mut(&TypeId::of::<T>()){
             while id.0 >= storage.len() {
-                storage.push(None);
+                storage.push(ComponentEntry::Empty);
             }
-            storage[id.0] = Some(Box::new(component));
+            storage[id.0] = ComponentEntry::Entry(Box::new(component));
             Ok(id)
         }else{
             Err("component is not registered")
@@ -52,7 +49,7 @@ impl ComponentStorage {
             if id.0 >= storage.len() {
                 Err("entity does not have component")
             }else{
-                storage[id.0] = None;
+                storage[id.0] = ComponentEntry::Empty;
                 Ok(id)
             }
         }else{
@@ -65,13 +62,13 @@ impl ComponentStorage {
             if id.0 > cs.len() {
                 continue;
             }else{
-                cs[id.0] = None;
+                cs[id.0] = ComponentEntry::Empty;
             }
         }
         Ok(())
     }
 
-    pub fn get<T: 'static>(&self) -> Result<&Vec<Option<Box<Any>>>, &str> {
+    pub fn get<T: 'static>(&self) -> Result<&Vec<ComponentEntry>, &str> {
         if let Some(x) = self.0.get(&TypeId::of::<T>()){
             Ok(x)
         }else{
@@ -79,7 +76,7 @@ impl ComponentStorage {
         }
     }
 
-    pub fn get_mut<T: 'static>(&mut self) -> Result<&mut Vec<Option<Box<Any>>>, &str> {
+    pub fn get_mut<T: 'static>(&mut self) -> Result<&mut Vec<ComponentEntry>, &str> {
         if let Some(x) = self.0.get_mut(&TypeId::of::<T>()){
 
             Ok(x)
@@ -92,28 +89,32 @@ impl ComponentStorage {
         self.0.len()
     }
 
-    pub fn get_iterator<T>(&self) -> ComponentIterator<T>{
-        let it = self.0.get(&TypeId::of::<T>()).iter_mut();
-        ComponentIterator::new(it)
+    pub fn get_mut_iterator<T: 'static>(&mut self) -> Result<ComponentIterator, &str>{
+        if let Some(entry) = self.0.get_mut(&TypeId::of::<T>()){
+            let it = entry.iter_mut();
+            Ok(ComponentIterator{st: it, current_index: 0})
+        }else{
+            Err("Unregistered component")
+        }
     }
 
 }
 
-pub struct ComponentIterator<'cs, T: 'cs>{
-    st: slice::IterMut<'cs, Option<T>>,
+pub struct ComponentIterator<'cs>{
+    st: slice::IterMut<'cs, ComponentEntry>,
     current_index: usize
 }
 
-impl<'cs, T> ComponentIterator<'cs, T> {
+impl<'it> ComponentIterator<'it> {
 
-    fn new(it: slice::IterMut<'cs, T>) -> Self {
+    fn new(it: slice::IterMut<'it, ComponentEntry>) -> ComponentIterator<'it> {
         ComponentIterator{
             st: it,
             current_index: 0
         }
     }
 
-    fn next(&mut self) -> Option<&mut T> {
+    fn next(&mut self) -> Option<&mut ComponentEntry> {
         self.current_index += 1;
         self.st.next()
     }
