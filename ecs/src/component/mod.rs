@@ -4,6 +4,7 @@ use std::any::Any;
 use entity::EntityIndex;
 use core::borrow::BorrowMut;
 use std::slice;
+use std::iter::FromIterator;
 
 pub trait Component: Any{
     fn update(&mut self);
@@ -100,15 +101,19 @@ impl ComponentStorage {
 
 }
 
-pub struct ComponentIterator<'cs>{
+pub struct ComponentIteratorJoin<H, T>()
+
+pub struct ComponentIterator<'cs, T>{
+    cache: Vec<&'cs T>,
     st: slice::IterMut<'cs, ComponentEntry>,
     current_index: usize
 }
 
-impl<'it> ComponentIterator<'it> {
+impl<'it, T> ComponentIterator<'it, T> {
 
-    fn new(it: slice::IterMut<'it, ComponentEntry>) -> ComponentIterator<'it> {
+    fn new<T>(it: slice::IterMut<'it, ComponentEntry>) -> ComponentIterator<'it, T> {
         ComponentIterator{
+            cache: vec![],
             st: it,
             current_index: 0
         }
@@ -116,7 +121,13 @@ impl<'it> ComponentIterator<'it> {
 
     fn next(&mut self) -> Option<&mut ComponentEntry> {
         self.current_index += 1;
-        self.st.next()
+        let res = self.st.next();
+        self.cache.push(res);
+        res
+    }
+
+    fn join<T, H>(&mut self, other: ComponentIterator<H>) -> ComponentIteratorJoin<T, H> {
+        unimplemented!()
     }
 
 }
