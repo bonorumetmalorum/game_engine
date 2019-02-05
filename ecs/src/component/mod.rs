@@ -106,9 +106,8 @@ pub struct ComponentIterator<'cs>{
 }
 
 impl<'it> ComponentIterator<'it> {
-
     fn new(it: slice::IterMut<'it, ComponentEntry>) -> ComponentIterator<'it> {
-        ComponentIterator{
+        ComponentIterator {
             st: it,
             current_index: 0
         }
@@ -118,5 +117,14 @@ impl<'it> ComponentIterator<'it> {
         self.current_index += 1;
         self.st.next()
     }
+}
 
+pub struct StubPosition{
+    pub x: f32,
+    pub y: f32,
+}
+
+pub struct StubVelocity{
+    dx: f32,
+    dy: f32,
 }
