@@ -9,12 +9,12 @@ pub trait Component: Any{
     fn update(&mut self);
 }
 
-pub enum ComponentEntry{
+pub enum ComponentEntry<T>{
     Empty,
-    Entry(Box<Any>)
+    Entry(Box<T>)
 }
 
-pub struct ComponentStorage(HashMap<TypeId, Vec<ComponentEntry>>);
+pub struct ComponentStorage(HashMap<TypeId, Box<Vec<ComponentEntry<Any>>>>);
 
 impl ComponentStorage {
 
@@ -23,7 +23,7 @@ impl ComponentStorage {
     }
 
     pub fn register_component<T:'static>(&mut self) -> Result<(usize), &str>{
-        let component_storage: Vec<ComponentEntry> = Vec::new();
+        let component_storage: Vec<ComponentEntry<Any>> = Vec::new();
         let len = component_storage.len();
         if let None = self.0.insert(TypeId::of::<T>(), component_storage) {
             Ok(len)
@@ -68,7 +68,7 @@ impl ComponentStorage {
         Ok(())
     }
 
-    pub fn get<T: 'static>(&self) -> Result<&Vec<ComponentEntry>, &str> {
+    pub fn get<T: 'static>(&self) -> Result<&Vec<ComponentEntry<T>>, &str> {
         if let Some(x) = self.0.get(&TypeId::of::<T>()){
             Ok(x)
         }else{
@@ -76,7 +76,7 @@ impl ComponentStorage {
         }
     }
 
-    pub fn get_mut<T: 'static>(&mut self) -> Result<&mut Vec<ComponentEntry>, &str> {
+    pub fn get_mut<T: 'static>(&mut self) -> Result<&mut Vec<ComponentEntry<T>>, &str> {
         if let Some(x) = self.0.get_mut(&TypeId::of::<T>()){
 
             Ok(x)
@@ -92,7 +92,7 @@ impl ComponentStorage {
     pub fn get_mut_iterator<T: 'static>(&mut self) -> Result<ComponentIterator<T>, &str>{
         if let Some(entry) = self.0.get_mut(&TypeId::of::<T>()){
             let it = entry.iter_mut();
-            Ok(ComponentIterator{ cache: vec![], st: it, current_index: 0})
+            Ok(ComponentIterator{st: it, current_index: 0})
         }else{
             Err("Unregistered component")
         }
@@ -103,22 +103,20 @@ impl ComponentStorage {
 pub struct ComponentIteratorJoin<'it, H, T>(ComponentIterator<'it, H>, ComponentIterator<'it, T>);
 
 pub struct ComponentIterator<'cs, T>{
-    cache: Vec<Option<&'cs mut T>>,
-    st: slice::IterMut<'cs, ComponentEntry>,
+    st: slice::IterMut<'cs, T>,
     current_index: usize
 }
 
 impl<'it, T: 'static> ComponentIterator<'it, T> {
 
-    fn new(it: slice::IterMut<'it, ComponentEntry>) -> ComponentIterator<'it, T> {
+    pub fn new(it: slice::IterMut<'it, ComponentEntry<T>>) -> ComponentIterator<'it, T> {
         ComponentIterator{
-            cache: vec![],
             st: it,
             current_index: 0
         }
     }
 
-    fn next(&mut self) -> &Option<&mut T> {
+    pub fn next(&mut self) -> &Option<&mut T> {
         //if the current index exists in cache, retrieve from cache.
         self.current_index += 1;
         if self.current_index > self.cache.len() {
@@ -136,12 +134,22 @@ impl<'it, T: 'static> ComponentIterator<'it, T> {
         }
     }
 
-    fn join<H>(&mut self, other: ComponentIterator<H>) -> ComponentIteratorJoin<T, H> {
+    pub fn join<H>(&mut self, other: ComponentIterator<H>) -> ComponentIteratorJoin<T, H> {
         unimplemented!()
     }
 
-    fn into_vec(self) -> Vec<T> {
-        unimplemented!()
+//    pub fn into_vec(self) -> Vec<Option<&mut T>> {
+//        if self.current_index > self.st.col {
+//            self.cache
+//        }else{
+//            loop{
+//                self.next
+//            }
+//        }
+//    }
+
+    pub fn index(&mut self) -> usize {
+        self.current_index
     }
 }
 

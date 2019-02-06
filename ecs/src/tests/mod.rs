@@ -1,5 +1,6 @@
 use component::Component;
 use ECS;
+use component::ComponentIterator;
 
 struct StubComponentA {
     pub counter: u8
@@ -90,16 +91,34 @@ fn get_component_iterator(){
     entity_manager.add_component((1,0), StubComponentA{ counter: 1 });
     entity_manager.add_component((2,0), StubComponentA{ counter: 2 });
     let mut it = entity_manager.iterator::<StubComponentA>();
+    assert_eq!(it.index(), 0)
 }
 
-//#[test]
-//fn get_component_test(){
-//    //
-//    let mut entity_manager = EntityStorage::new();
-//    let res1 = entity_manager.allocate_new_entity();
-//    entity_manager.register_new_component::<StubComponentA>();
-//    let res3 = entity_manager.add_component(res1, StubComponentA{counter: 0}).unwrap();
-//    let mut comp = entity_manager.fetch::<StubComponentA>(res3).unwrap();
-//    assert_eq!(comp.unwrap().counter, 0);
-//}
+#[test]
+fn get_component_test(){
+    let mut entity_manager = ECS::new();
+    entity_manager.allocate_new_entity();
+    entity_manager.allocate_new_entity();
+    entity_manager.allocate_new_entity();
+    entity_manager.register_new_component::<StubComponentA>();
+    entity_manager.add_component((0,0), StubComponentA{ counter: 0 });
+    entity_manager.add_component((1,0), StubComponentA{ counter: 1 });
+    entity_manager.add_component((2,0), StubComponentA{ counter: 2 });
+    {
+        let mut it = entity_manager.iterator::<StubComponentA>();
+        let mut a = it.next();
+        let mut b = it.next().unwrap();
+        let mut c = it.next().unwrap();
+        a.update();
+        b.update();
+        c.update();
+    }
+    let mut it = entity_manager.iterator::<StubComponentA>();
+    let mut a = it.next().unwrap();
+    let mut b = it.next().unwrap();
+    let mut c = it.next().unwrap();
+    assert_eq!(a.counter, 1);
+    assert_eq!(b.counter, 1);
+    assert_eq!(c.counter, 1);
+}
 
