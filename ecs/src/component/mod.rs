@@ -101,10 +101,10 @@ impl ComponentStorage {
 
 }
 
-pub struct ComponentIteratorJoin<H, T>()
+pub struct ComponentIteratorJoin<'it, H, T>(ComponentIterator<'it, H>, ComponentIterator<'it, T>);
 
 pub struct ComponentIterator<'cs, T>{
-    cache: Vec<Option<&'cs mut ComponentEntry>>,
+    cache: Vec<Option<&'cs mut T>>,
     st: slice::IterMut<'cs, ComponentEntry>,
     current_index: usize
 }
@@ -120,6 +120,8 @@ impl<'it, T> ComponentIterator<'it, T> {
     }
 
     fn next(&mut self) -> Option<&mut ComponentEntry> {
+        //if the current index exists in cache, retrieve from cache.
+        //else retrieve it from the
         let res = self.st.next();
         self.cache.push(res);
         let result = self.cache[self.current_index];
