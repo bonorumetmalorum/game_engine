@@ -4,7 +4,6 @@ use std::any::Any;
 use entity::EntityIndex;
 use core::borrow::BorrowMut;
 use std::slice;
-use std::iter::FromIterator;
 
 pub trait Component: Any{
     fn update(&mut self);
@@ -90,10 +89,10 @@ impl ComponentStorage {
         self.0.len()
     }
 
-    pub fn get_mut_iterator<T: 'static>(&mut self) -> Result<ComponentIterator, &str>{
+    pub fn get_mut_iterator<T: 'static>(&mut self) -> Result<ComponentIterator<T>, &str>{
         if let Some(entry) = self.0.get_mut(&TypeId::of::<T>()){
             let it = entry.iter_mut();
-            Ok(ComponentIterator{st: it, current_index: 0})
+            Ok(ComponentIterator{ cache: vec![], st: it, current_index: 0})
         }else{
             Err("Unregistered component")
         }
@@ -109,9 +108,9 @@ pub struct ComponentIterator<'cs, T>{
     current_index: usize
 }
 
-impl<'it, T> ComponentIterator<'it, T> {
+impl<'it, T: 'static> ComponentIterator<'it, T> {
 
-    fn new<T>(it: slice::IterMut<'it, ComponentEntry>) -> ComponentIterator<'it, T> {
+    fn new(it: slice::IterMut<'it, ComponentEntry>) -> ComponentIterator<'it, T> {
         ComponentIterator{
             cache: vec![],
             st: it,
@@ -119,21 +118,29 @@ impl<'it, T> ComponentIterator<'it, T> {
         }
     }
 
-    fn next(&mut self) -> Option<&mut ComponentEntry> {
+    fn next(&mut self) -> &Option<&mut T> {
         //if the current index exists in cache, retrieve from cache.
-        //else retrieve it from the
-        let res = self.st.next();
-        self.cache.push(res);
-        let result = self.cache[self.current_index];
         self.current_index += 1;
-        result
+        if self.current_index > self.cache.len() {
+            //else retrieve it from the component storage, downcast it, cache it and then return it.
+            if let ComponentEntry::Entry(val) = self.st.next().unwrap(){
+                let mut downcast = val.downcast_mut::<T>();
+                self.cache.push(downcast);
+                &self.cache[self.cache.len() - 1]
+            }else{
+                self.cache.push(None);
+                &self.cache[self.cache.len() - 1]
+            }
+        }else{
+            &self.cache[self.current_index]
+        }
     }
 
-    fn join<T, H>(&mut self, other: ComponentIterator<H>) -> ComponentIteratorJoin<T, H> {
+    fn join<H>(&mut self, other: ComponentIterator<H>) -> ComponentIteratorJoin<T, H> {
         unimplemented!()
     }
 
-    fn into_vec<T>(self) -> Vec<T> {
+    fn into_vec(self) -> Vec<T> {
         unimplemented!()
     }
 }
