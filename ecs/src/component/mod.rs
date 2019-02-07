@@ -14,7 +14,8 @@ pub enum ComponentEntry<T: ?Sized>{
     Entry(Box<T>)
 }
 
-pub struct ComponentStorage(HashMap<TypeId, Box<Vec<ComponentEntry<Any>>>>);
+pub struct ComponentStorage(HashMap<TypeId, Box<Any>>); //I think here i need to store a Box any and store vectors in the any
+//this will allow to downcast to a Vec<T> and subsequently get the appropriate iterator.
 
 impl ComponentStorage {
 
@@ -33,7 +34,7 @@ impl ComponentStorage {
     }
 
     pub fn add_component<T:'static>(&mut self, component: T, id: EntityIndex) -> Result<EntityIndex, &str> {
-        if let Some(storage) = self.0.get_mut(&TypeId::of::<T>()){
+        if let Ok(storage) = self.get_mut::<T>(){
             while id.0 >= storage.len() {
                 storage.push(ComponentEntry::Empty);
             }
@@ -45,7 +46,7 @@ impl ComponentStorage {
     }
 
     pub fn remove_component<T:'static>(&mut self, id: EntityIndex) -> Result<EntityIndex, &str>{
-        if let Some(storage) = self.0.get_mut(&TypeId::of::<T>()){
+        if let Ok(storage) = self.get_mut::<T>(){
             if id.0 >= storage.len() {
                 Err("entity does not have component")
             }else{
@@ -58,11 +59,12 @@ impl ComponentStorage {
     }
 
     pub fn clear_entity(&mut self, id: EntityIndex) -> Result<(), &str> {
-        for (_, cs) in self.0.borrow_mut() {
-            if id.0 > cs.len() {
+        for (t, cs) in self.0.borrow_mut() {
+            let mut dc = cs.downcast_mut::<Vec<ComponentEntry<Any>>>().unwrap();
+            if id.0 > dc.len() {
                 continue;
             }else{
-                cs[id.0] = ComponentEntry::Empty;
+                dc[id.0] = ComponentEntry::Empty;
             }
         }
         Ok(())
@@ -70,7 +72,11 @@ impl ComponentStorage {
 
     pub fn get<T: 'static>(&self) -> Result<&Vec<ComponentEntry<T>>, &str> {
         if let Some(x) = self.0.get(&TypeId::of::<T>()){
-            Ok(x)
+            if let Some(dc) = x.downcast_ref::<Vec<ComponentEntry<T>>>() {
+                Ok(dc)
+            }else{
+                Err("downcast failed, type error")
+            }
         }else{
             Err("unregistered type")
         }
@@ -78,8 +84,11 @@ impl ComponentStorage {
 
     pub fn get_mut<T: 'static>(&mut self) -> Result<&mut Vec<ComponentEntry<T>>, &str> {
         if let Some(x) = self.0.get_mut(&TypeId::of::<T>()){
-
-            Ok(x)
+            if let Some(dc) = x.downcast_mut::<Vec<ComponentEntry<T>>>() {
+                Ok(dc)
+            }else{
+                Err("downcast failed, type error")
+            }
         }else{
             Err("unregistered type")
         }
@@ -90,7 +99,7 @@ impl ComponentStorage {
     }
 
     pub fn get_mut_iterator<T: 'static>(&mut self) -> Result<ComponentIterator<T>, &str>{
-        if let Some(entry) = self.0.get_mut(&TypeId::of::<T>()){
+        if let Ok(entry) = self.get_mut::<T>(){
             let it = entry.iter_mut();
             Ok(ComponentIterator{st: it, current_index: 0})
         }else{
@@ -117,21 +126,7 @@ impl<'it, T: 'static> ComponentIterator<'it, T> {
     }
 
     pub fn next(&mut self) -> &Option<&mut T> {
-        //if the current index exists in cache, retrieve from cache.
-        self.current_index += 1;
-        if self.current_index > self.cache.len() {
-            //else retrieve it from the component storage, downcast it, cache it and then return it.
-            if let ComponentEntry::Entry(val) = self.st.next().unwrap(){
-                let mut downcast = val.downcast_mut::<T>();
-                self.cache.push(downcast);
-                &self.cache[self.cache.len() - 1]
-            }else{
-                self.cache.push(None);
-                &self.cache[self.cache.len() - 1]
-            }
-        }else{
-            &self.cache[self.current_index]
-        }
+        unimplemented!()
     }
 
     pub fn join<H>(&mut self, other: ComponentIterator<H>) -> ComponentIteratorJoin<T, H> {
