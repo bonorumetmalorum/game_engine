@@ -125,7 +125,7 @@ impl<'it, T: 'static> ComponentIterator<'it, T> {
         }
     }
 
-    pub fn next(&mut self) -> &Option<&mut T> {
+    pub fn next(&mut self) -> Option<&mut T> {
         unimplemented!()
     }
 

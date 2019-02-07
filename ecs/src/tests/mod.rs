@@ -106,19 +106,16 @@ fn get_component_test(){
     entity_manager.add_component((2,0), StubComponentA{ counter: 2 });
     {
         let mut it = entity_manager.iterator::<StubComponentA>();
-        let mut a = it.next();
-        let mut b = it.next().unwrap();
-        let mut c = it.next().unwrap();
-        a.update();
-        b.update();
-        c.update();
+        loop{
+            if let Some(x) = it.next() {
+                x.update();
+            }else{
+                break;
+            }
+        }
     }
     let mut it = entity_manager.iterator::<StubComponentA>();
     let mut a = it.next().unwrap();
-    let mut b = it.next().unwrap();
-    let mut c = it.next().unwrap();
     assert_eq!(a.counter, 1);
-    assert_eq!(b.counter, 1);
-    assert_eq!(c.counter, 1);
 }
 
