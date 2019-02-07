@@ -9,7 +9,7 @@ pub trait Component: Any{
     fn update(&mut self);
 }
 
-pub enum ComponentEntry<T>{
+pub enum ComponentEntry<T: ?Sized>{
     Empty,
     Entry(Box<T>)
 }
@@ -25,7 +25,7 @@ impl ComponentStorage {
     pub fn register_component<T:'static>(&mut self) -> Result<(usize), &str>{
         let component_storage: Vec<ComponentEntry<Any>> = Vec::new();
         let len = component_storage.len();
-        if let None = self.0.insert(TypeId::of::<T>(), component_storage) {
+        if let None = self.0.insert(TypeId::of::<T>(), Box::new(component_storage)) {
             Ok(len)
         }else{
             Err("overwritten existing component storage")
@@ -100,10 +100,10 @@ impl ComponentStorage {
 
 }
 
-pub struct ComponentIteratorJoin<'it, H, T>(ComponentIterator<'it, H>, ComponentIterator<'it, T>);
+pub struct ComponentIteratorJoin<'it, H: 'it, T: 'it>(ComponentIterator<'it, H>, ComponentIterator<'it, T>);
 
-pub struct ComponentIterator<'cs, T>{
-    st: slice::IterMut<'cs, T>,
+pub struct ComponentIterator<'cs, T: 'cs>{
+    st: slice::IterMut<'cs, ComponentEntry<T>>,
     current_index: usize
 }
 
