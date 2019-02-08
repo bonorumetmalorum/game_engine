@@ -1,20 +1,43 @@
+//implement the iterator for the dense component storage
+//correct delete entity, such that you use the Storage trait implementation.
+
+
+
+#[macro_use]
+extern crate downcast_rs;
 use std::collections::HashMap;
 use std::any::TypeId;
 use std::any::Any;
 use entity::EntityIndex;
 use core::borrow::BorrowMut;
 use std::slice;
+use downcast_rs::Downcast;
 
-pub trait Component: Any{
+pub trait Component: Downcast{
     fn update(&mut self);
 }
+
+impl_downcast!(Component);
 
 pub enum ComponentEntry<T: ?Sized>{
     Empty,
     Entry(Box<T>)
 }
 
-pub struct ComponentStorage(HashMap<TypeId, Box<Any>>); //I think here i need to store a Box any and store vectors in the any
+trait Storage: Downcast {
+    fn remove(&mut self, EntityIndex) -> Result<EntityIndex, &str>;
+}
+impl_downcast!(Storage);
+
+pub struct DenseComponentStorage<T>(Vec<ComponentEntry<T>>);
+
+impl<T> Storage for DenseComponentStorage<T> {
+    fn remove(&mut self, _: (usize, u64)) -> Result<(usize, u64), &str> {
+        self.0
+    }
+}
+
+pub struct ComponentStorage(HashMap<TypeId, Box<Storage>>); //I think here i need to store a Box any and store vectors in the any
 //this will allow to downcast to a Vec<T> and subsequently get the appropriate iterator.
 
 impl ComponentStorage {
@@ -24,7 +47,7 @@ impl ComponentStorage {
     }
 
     pub fn register_component<T:'static>(&mut self) -> Result<(usize), &str>{
-        let component_storage: Vec<ComponentEntry<Any>> = Vec::new();
+        let component_storage: Vec<ComponentEntry<T>> = Vec::new();
         let len = component_storage.len();
         if let None = self.0.insert(TypeId::of::<T>(), Box::new(component_storage)) {
             Ok(len)
@@ -63,7 +86,7 @@ impl ComponentStorage {
             let mut dc = cs.downcast_mut::<Vec<ComponentEntry<Any>>>().unwrap();
             if id.0 > dc.len() {
                 continue;
-            }else{
+            } else {
                 dc[id.0] = ComponentEntry::Empty;
             }
         }
