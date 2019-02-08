@@ -1,10 +1,3 @@
-//implement the iterator for the dense component storage
-//correct delete entity, such that you use the Storage trait implementation.
-
-
-
-#[macro_use]
-extern crate downcast_rs;
 use std::collections::HashMap;
 use std::any::TypeId;
 use std::any::Any;
@@ -31,9 +24,21 @@ impl_downcast!(Storage);
 
 pub struct DenseComponentStorage<T>(Vec<ComponentEntry<T>>);
 
-impl<T> Storage for DenseComponentStorage<T> {
-    fn remove(&mut self, _: (usize, u64)) -> Result<(usize, u64), &str> {
-        self.0
+impl<T: 'static> Storage for DenseComponentStorage<T> {
+
+    fn remove(&mut self, index: EntityIndex) -> Result<(usize, u64), &str> {
+        if let Some(reference) = self.0.get_mut(index.0){
+            *reference = ComponentEntry::Empty;
+            Ok(index)
+        }else{
+            Err("index out of bounds")
+        }
+    }
+}
+
+impl<T> DenseComponentStorage<T> {
+    pub fn new() -> DenseComponentStorage<T>{
+        DenseComponentStorage(Vec::new())
     }
 }
 
@@ -47,9 +52,9 @@ impl ComponentStorage {
     }
 
     pub fn register_component<T:'static>(&mut self) -> Result<(usize), &str>{
-        let component_storage: Vec<ComponentEntry<T>> = Vec::new();
-        let len = component_storage.len();
-        if let None = self.0.insert(TypeId::of::<T>(), Box::new(component_storage)) {
+        let compstrg: DenseComponentStorage<T> = DenseComponentStorage::new();
+        let len = compstrg.0.len();
+        if let None = self.0.insert(TypeId::of::<T>(), Box::new(compstrg)) {
             Ok(len)
         }else{
             Err("overwritten existing component storage")
@@ -58,10 +63,10 @@ impl ComponentStorage {
 
     pub fn add_component<T:'static>(&mut self, component: T, id: EntityIndex) -> Result<EntityIndex, &str> {
         if let Ok(storage) = self.get_mut::<T>(){
-            while id.0 >= storage.len() {
-                storage.push(ComponentEntry::Empty);
+            while id.0 >= storage.0.len() {
+                storage.0.push(ComponentEntry::Empty);
             }
-            storage[id.0] = ComponentEntry::Entry(Box::new(component));
+            storage.0[id.0] = ComponentEntry::Entry(Box::new(component));
             Ok(id)
         }else{
             Err("component is not registered")
@@ -70,10 +75,10 @@ impl ComponentStorage {
 
     pub fn remove_component<T:'static>(&mut self, id: EntityIndex) -> Result<EntityIndex, &str>{
         if let Ok(storage) = self.get_mut::<T>(){
-            if id.0 >= storage.len() {
+            if id.0 >= storage.0.len() {
                 Err("entity does not have component")
             }else{
-                storage[id.0] = ComponentEntry::Empty;
+                storage.0[id.0] = ComponentEntry::Empty;
                 Ok(id)
             }
         }else{
@@ -82,20 +87,21 @@ impl ComponentStorage {
     }
 
     pub fn clear_entity(&mut self, id: EntityIndex) -> Result<(), &str> {
+        let mut status = Ok(());
         for (t, cs) in self.0.borrow_mut() {
-            let mut dc = cs.downcast_mut::<Vec<ComponentEntry<Any>>>().unwrap();
-            if id.0 > dc.len() {
+            if let Ok(res) = cs.remove(id) {
                 continue;
-            } else {
-                dc[id.0] = ComponentEntry::Empty;
+            }else{
+                status = Err("Entity does not exist");
+                break;
             }
         }
-        Ok(())
+        status
     }
 
-    pub fn get<T: 'static>(&self) -> Result<&Vec<ComponentEntry<T>>, &str> {
+    pub fn get<T: 'static>(&self) -> Result<&DenseComponentStorage<T>, &str> {
         if let Some(x) = self.0.get(&TypeId::of::<T>()){
-            if let Some(dc) = x.downcast_ref::<Vec<ComponentEntry<T>>>() {
+            if let Some(dc) = x.downcast_ref::<DenseComponentStorage<T>>() {
                 Ok(dc)
             }else{
                 Err("downcast failed, type error")
@@ -105,9 +111,9 @@ impl ComponentStorage {
         }
     }
 
-    pub fn get_mut<T: 'static>(&mut self) -> Result<&mut Vec<ComponentEntry<T>>, &str> {
+    pub fn get_mut<T: 'static>(&mut self) -> Result<&mut DenseComponentStorage<T>, &str> {
         if let Some(x) = self.0.get_mut(&TypeId::of::<T>()){
-            if let Some(dc) = x.downcast_mut::<Vec<ComponentEntry<T>>>() {
+            if let Some(dc) = x.downcast_mut::<DenseComponentStorage<T>>() {
                 Ok(dc)
             }else{
                 Err("downcast failed, type error")
@@ -123,7 +129,7 @@ impl ComponentStorage {
 
     pub fn get_mut_iterator<T: 'static>(&mut self) -> Result<ComponentIterator<T>, &str>{
         if let Ok(entry) = self.get_mut::<T>(){
-            let it = entry.iter_mut();
+            let it = entry.0.iter_mut();
             Ok(ComponentIterator{st: it, current_index: 0})
         }else{
             Err("Unregistered component")

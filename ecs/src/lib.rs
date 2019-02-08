@@ -5,6 +5,8 @@ pub mod system;
 mod tests;
 
 extern crate core;
+#[macro_use]
+extern crate downcast_rs;
 
 use component::ComponentStorage;
 use entity::management::EntityAllocator;
