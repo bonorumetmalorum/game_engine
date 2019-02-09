@@ -153,6 +153,9 @@ impl ComponentStorage {
     }
 
 }
+//I may be able to get away without implementing a trait for the iterators depending on how I tackle the system impls
+//if a system is written using n different iterators then it is up to the user to correctly implement the search used within
+
 
 pub struct ComponentIteratorJoin<'it, H: 'it, T: 'it>(ComponentIterator<'it, H>, ComponentIterator<'it, T>);
 
@@ -160,6 +163,8 @@ pub struct ComponentIterator<'cs, T: 'cs>{
     st: slice::IterMut<'cs, ComponentEntry<T>>,
     current_index: usize
 }
+
+//maybe implement Iterator trait for ComponentIterator to allow for a better interface
 
 impl<'it, T: 'static> ComponentIterator<'it, T> {
 
