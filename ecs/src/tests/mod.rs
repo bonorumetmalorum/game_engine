@@ -108,7 +108,7 @@ fn get_component_test(){
         let mut it = entity_manager.iterator::<StubComponentA>();
         loop{
             if let Some(x) = it.next() {
-                x.update();
+                x.borrow_mut().unwrap().counter += 1;
             }else{
                 break;
             }
@@ -116,6 +116,6 @@ fn get_component_test(){
     }
     let mut it = entity_manager.iterator::<StubComponentA>();
     let mut a = it.next().unwrap();
-    assert_eq!(a.counter, 1);
+    assert_eq!(a.borrow_mut().unwrap().counter, 1);
 }
 

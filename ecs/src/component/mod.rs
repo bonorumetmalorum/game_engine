@@ -17,6 +17,15 @@ pub enum ComponentEntry<T: ?Sized>{
     Entry(Box<T>)
 }
 
+impl<T> ComponentEntry<T> {
+    pub fn borrow_mut(&mut self) -> Option<&mut Box<T>> {
+        match self {
+            ComponentEntry::Entry(val) => Some(val),
+            _ => None
+        }
+    }
+}
+
 trait Storage: Downcast {
     fn remove(&mut self, EntityIndex) -> Result<EntityIndex, &str>;
 }
@@ -154,8 +163,8 @@ impl<'it, T: 'static> ComponentIterator<'it, T> {
         }
     }
 
-    pub fn next(&mut self) -> Option<&mut T> {
-        unimplemented!()
+    pub fn next(&mut self) -> Option<&mut ComponentEntry<T>> {
+        self.st.next()
     }
 
     pub fn join<H>(&mut self, other: ComponentIterator<H>) -> ComponentIteratorJoin<T, H> {
