@@ -12,6 +12,13 @@ pub trait Component: Downcast{
 
 impl_downcast!(Component);
 
+//iterator joining for more advanced queries, need to implement a trait to allow for joint iterators to be nested.
+pub struct JointIterator<'it, H, T>{
+    iter1: ComponentIterator<'it, H>,
+    iter2: ComponentIterator<'it, T>
+}
+
+
 pub enum ComponentEntry<T: ?Sized>{
     Empty,
     Entry(Box<T>)
