@@ -115,7 +115,9 @@ fn get_component_test(){
         }
     }
     let mut it = entity_manager.iterator::<StubComponentA>();
-    let mut a = it.next().unwrap();
-    assert_eq!(a.borrow_mut().unwrap().counter, 1);
+    let mut res = it.into_vec();
+    assert_eq!(res[0].borrow_mut().unwrap().counter, 1);
+    assert_eq!(res[1].borrow_mut().unwrap().counter, 2);
+    assert_eq!(res[2].borrow_mut().unwrap().counter, 3);
 }
 

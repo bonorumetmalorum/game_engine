@@ -171,15 +171,16 @@ impl<'it, T: 'static> ComponentIterator<'it, T> {
         unimplemented!()
     }
 
-//    pub fn into_vec(self) -> Vec<Option<&mut T>> {
-//        if self.current_index > self.st.col {
-//            self.cache
-//        }else{
-//            loop{
-//                self.next
-//            }
-//        }
-//    }
+    pub fn into_vec(mut self) -> Vec<&'it mut ComponentEntry<T>> {
+        let mut result: Vec<&mut ComponentEntry<T>> = vec![];
+        loop{
+            match self.st.next() {
+                Some(val) => result.push(val),
+                None => break
+            }
+        }
+        result
+    }
 
     pub fn index(&mut self) -> usize {
         self.current_index

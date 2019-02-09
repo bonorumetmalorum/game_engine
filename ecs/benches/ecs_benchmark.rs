@@ -4,13 +4,13 @@ extern crate ecs;
 use ecs::entity::*;
 use ecs::component::*;
 use criterion::Criterion;
-use ecs::entity::management::EntityStorage;
+use ecs::ECS;
 
 const NUM_ENTITIES: u32 = 100;
 
-fn build() -> (Vec<EntityIndex>, management::EntityStorage) {
+fn build() -> (Vec<EntityIndex>, ECS) {
     let mut entities = vec![];
-    let mut ecs = management::EntityStorage::new();
+    let mut ecs = ECS::new();
     ecs.register_new_component::<StubPosition>();
     ecs.register_new_component::<StubVelocity>();
     for _ in 0..NUM_ENTITIES {
@@ -55,7 +55,7 @@ fn ecs_fetch_component(c: &mut Criterion){
     let (entities, mut ecs) = build();
     ecs.register_new_component::<StubPosition>();
     let res2 = ecs.add_component(entities[99], StubPosition{x: 0.0, y: 0.0}).unwrap();
-    c.bench_function("ecs fetch component", move |b| b.iter(||{ecs.fetch::<StubPosition>(res2);}));
+    c.bench_function("ecs fetch component", move |b| b.iter(||{let it = ecs.iterator::<StubPosition>(); it.into_vec();}));
 }
 
 criterion_group!(benches, ecs_allocate_new_entities, ecs_deallocate_empty_entity, ecs_deallocate_entity_with_component, ecs_register_component, ecs_add_new_component, ecs_remove_component, ecs_fetch_component);
