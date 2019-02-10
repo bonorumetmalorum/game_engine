@@ -12,12 +12,6 @@ pub trait Component: Downcast{
 
 impl_downcast!(Component);
 
-//iterator joining for more advanced queries, need to implement a trait to allow for joint iterators to be nested.
-pub struct JointIterator<'it, H, T>{
-    iter1: ComponentIterator<'it, H>,
-    iter2: ComponentIterator<'it, T>
-}
-
 
 pub enum ComponentEntry<T: ?Sized>{
     Empty,
@@ -155,9 +149,20 @@ impl ComponentStorage {
 }
 //I may be able to get away without implementing a trait for the iterators depending on how I tackle the system impls
 //if a system is written using n different iterators then it is up to the user to correctly implement the search used within
+pub trait Iter{
+    type Item;
+    fn next(&mut self) -> Option<Self::Item>;
+}
 
+pub struct ComponentIteratorJoin<H, T>(H, T);
 
-pub struct ComponentIteratorJoin<'it, H: 'it, T: 'it>(ComponentIterator<'it, H>, ComponentIterator<'it, T>);
+impl<H: Iter, T: Iter> Iter for ComponentIteratorJoin<H, T> {
+    type Item = (H::Item, T::Item);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        unimplemented!()
+    }
+}
 
 pub struct ComponentIterator<'cs, T: 'cs>{
     st: slice::IterMut<'cs, ComponentEntry<T>>,
@@ -165,6 +170,14 @@ pub struct ComponentIterator<'cs, T: 'cs>{
 }
 
 //maybe implement Iterator trait for ComponentIterator to allow for a better interface
+
+impl<'it, T> Iter for ComponentIterator<'it, T>{
+    type Item = &'it mut ComponentEntry<T>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.st.next()
+    }
+}
 
 impl<'it, T: 'static> ComponentIterator<'it, T> {
 
@@ -175,9 +188,9 @@ impl<'it, T: 'static> ComponentIterator<'it, T> {
         }
     }
 
-    pub fn next(&mut self) -> Option<&mut ComponentEntry<T>> {
-        self.st.next()
-    }
+//    pub fn next(&mut self) -> Option<&mut ComponentEntry<T>> {
+//        self.st.next()
+//    }
 
     pub fn join<H>(&mut self, other: ComponentIterator<H>) -> ComponentIteratorJoin<T, H> {
         unimplemented!()

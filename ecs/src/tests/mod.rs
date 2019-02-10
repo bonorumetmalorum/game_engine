@@ -121,3 +121,8 @@ fn get_component_test(){
     assert_eq!(res[2].borrow_mut().unwrap().counter, 3);
 }
 
+#[test]
+fn test_system(){
+
+}
+
