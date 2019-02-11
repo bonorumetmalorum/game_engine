@@ -151,7 +151,9 @@ impl ComponentStorage {
 //if a system is written using n different iterators then it is up to the user to correctly implement the search used within
 pub trait Iter{
     type Item;
-    fn next(&mut self) -> Option<Self::Item>;
+
+    fn next(&mut self, until: Option<usize>) -> Option<Self::Item>;
+    fn into_vec(mut self) -> Vec<Item>;
 }
 
 pub struct ComponentIteratorJoin<H, T>(H, T);
@@ -159,7 +161,11 @@ pub struct ComponentIteratorJoin<H, T>(H, T);
 impl<H: Iter, T: Iter> Iter for ComponentIteratorJoin<H, T> {
     type Item = (H::Item, T::Item);
 
-    fn next(&mut self) -> Option<Self::Item> {
+    fn next(&mut self, until: Option<usize>) -> Option<(Self::Item, usize)> {
+        unimplemented!()
+    }
+
+    fn into_vec(mut self) -> Vec<Self::Item> {
         unimplemented!()
     }
 }
@@ -174,8 +180,24 @@ pub struct ComponentIterator<'cs, T: 'cs>{
 impl<'it, T> Iter for ComponentIterator<'it, T>{
     type Item = &'it mut ComponentEntry<T>;
 
-    fn next(&mut self) -> Option<Self::Item> {
+    fn next(&mut self, until: Option<usize>) -> Option<Self::Item> {
+        if let Some(lim) = until {
+
+        }else{
+
+        }
         self.st.next()
+    }
+
+    fn into_vec(mut self) -> Vec<Self::Item> {
+        let mut result: Vec<&mut ComponentEntry<T>> = vec![];
+        loop{
+            match self.st.next() {
+                Some(val) => result.push(val),
+                None => break
+            }
+        }
+        result
     }
 }
 
@@ -188,23 +210,12 @@ impl<'it, T: 'static> ComponentIterator<'it, T> {
         }
     }
 
-//    pub fn next(&mut self) -> Option<&mut ComponentEntry<T>> {
-//        self.st.next()
-//    }
-
     pub fn join<H>(&mut self, other: ComponentIterator<H>) -> ComponentIteratorJoin<T, H> {
         unimplemented!()
     }
 
     pub fn into_vec(mut self) -> Vec<&'it mut ComponentEntry<T>> {
-        let mut result: Vec<&mut ComponentEntry<T>> = vec![];
-        loop{
-            match self.st.next() {
-                Some(val) => result.push(val),
-                None => break
-            }
-        }
-        result
+
     }
 
     pub fn index(&mut self) -> usize {

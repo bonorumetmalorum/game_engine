@@ -122,7 +122,22 @@ fn get_component_test(){
 }
 
 #[test]
-fn test_system(){
-
+fn iterator_join_test(){
+    let mut entity_manager = ECS::new();
+    entity_manager.allocate_new_entity();
+    entity_manager.allocate_new_entity();
+    entity_manager.allocate_new_entity();
+    entity_manager.register_new_component::<StubComponentA>();
+    entity_manager.add_component((0,0), StubComponentA{ counter: 0 });
+    entity_manager.add_component((0,0), StubComponentB{ counter: 0 });
+    entity_manager.add_component((1,0), StubComponentA{ counter: 1 });
+    entity_manager.add_component((2,0), StubComponentA{ counter: 2 });
+    entity_manager.add_component((2,0), StubComponentB{ counter: 2 });
+    let mut ita = entity_manager.iterator::<StubComponentA>();
+    let mut itb = entity_manager.iterator::<StubComponentB>();
+    let mut joint_iter = ita.join(itb);
+    let mut res = joint_iter.into_vec();
+    assert_eq!(res[0].borrow_mut().unwrap().counter, 1);
+    assert_eq!(res[1].borrow_mut().unwrap().counter, 2);
 }
 
