@@ -12,7 +12,7 @@ pub trait Component: Downcast{
 
 impl_downcast!(Component);
 
-
+#[derive(PartialEq, Eq, Debug)]
 pub enum ComponentEntry<T: ?Sized>{
     Empty,
     Entry(Box<T>)
@@ -73,10 +73,10 @@ impl ComponentStorage {
 
     pub fn add_component<T:'static>(&mut self, component: T, id: EntityIndex) -> Result<EntityIndex, &str> {
         if let Ok(storage) = self.get_mut::<T>(){
-            while id.0 >= storage.0.len() {
+            while id.0 > storage.0.len() {
                 storage.0.push(ComponentEntry::Empty);
             }
-            storage.0[id.0] = ComponentEntry::Entry(Box::new(component));
+            storage.0.push( ComponentEntry::Entry(Box::new(component)));
             Ok(id)
         }else{
             Err("component is not registered")
@@ -152,8 +152,8 @@ impl ComponentStorage {
 pub trait Iter{
     type Item;
 
-    fn next(&mut self, until: Option<usize>) -> Option<Self::Item>;
-    fn into_vec(mut self) -> Vec<Item>;
+    fn next(&mut self, until: Option<usize>) -> Option<(Self::Item, usize)>;
+    fn into_vec(mut self) -> Vec<Self::Item>;
 }
 
 pub struct ComponentIteratorJoin<H, T>(H, T);
@@ -162,7 +162,28 @@ impl<H: Iter, T: Iter> Iter for ComponentIteratorJoin<H, T> {
     type Item = (H::Item, T::Item);
 
     fn next(&mut self, until: Option<usize>) -> Option<(Self::Item, usize)> {
-        unimplemented!()
+        match (self.0.next(until), self.1.next(until)){
+            (Some((mut i1, mut ind1)), Some((mut i2, mut ind2))) => loop {
+                if ind1 < ind2 {
+                    if let Some(res) = self.0.next(Some(ind2)) {
+                        i1 = res.0;
+                        ind1 = res.1;
+                    }else{
+                        return None;
+                    }
+                } else if ind1 > ind2 {
+                    if let Some(res) = self.1.next(Some(ind1)){
+                        i2 = res.0;
+                        ind2 = res.1;
+                    }else{
+                        return None;
+                    }
+                }else{
+                    return Some(((i1, i2), ind1))
+                }
+            },
+            _ => None
+        }
     }
 
     fn into_vec(mut self) -> Vec<Self::Item> {
@@ -180,13 +201,27 @@ pub struct ComponentIterator<'cs, T: 'cs>{
 impl<'it, T> Iter for ComponentIterator<'it, T>{
     type Item = &'it mut ComponentEntry<T>;
 
-    fn next(&mut self, until: Option<usize>) -> Option<Self::Item> {
-        if let Some(lim) = until {
+    fn next(&mut self, until: Option<usize>) -> Option<(Self::Item, usize)> {
+        let mut lim = until.unwrap_or(0);
+        loop{
+            let r;
+            let i;
+            if lim > self.current_index {
+                r = self.st.nth(lim - self.current_index);
+                i = lim;
+                self.current_index = lim + 1;
+            }else{
+                r = self.st.next();
+                i = self.current_index;
+                self.current_index += 1;
+            }
 
-        }else{
+            match r {
+                Some(ComponentEntry::Entry(_)) => {return Some((r.unwrap(), i))},
+                _ => {return None}
+            }
 
         }
-        self.st.next()
     }
 
     fn into_vec(mut self) -> Vec<Self::Item> {
@@ -212,10 +247,6 @@ impl<'it, T: 'static> ComponentIterator<'it, T> {
 
     pub fn join<H>(&mut self, other: ComponentIterator<H>) -> ComponentIteratorJoin<T, H> {
         unimplemented!()
-    }
-
-    pub fn into_vec(mut self) -> Vec<&'it mut ComponentEntry<T>> {
-
     }
 
     pub fn index(&mut self) -> usize {

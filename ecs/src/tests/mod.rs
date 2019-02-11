@@ -1,6 +1,8 @@
 use component::Component;
 use ECS;
 use component::ComponentIterator;
+use component::Iter;
+use component::ComponentEntry;
 
 struct StubComponentA {
     pub counter: u8
@@ -107,8 +109,8 @@ fn get_component_test(){
     {
         let mut it = entity_manager.iterator::<StubComponentA>();
         loop{
-            if let Some(x) = it.next() {
-                x.borrow_mut().unwrap().counter += 1;
+            if let Some(x) = it.next(None) {
+                x.0.borrow_mut().unwrap().counter += 1;
             }else{
                 break;
             }
@@ -122,22 +124,43 @@ fn get_component_test(){
 }
 
 #[test]
+fn iterator_test_singular(){
+    let mut entity_manager = ECS::new();
+    entity_manager.allocate_new_entity();
+    entity_manager.allocate_new_entity();
+    entity_manager.allocate_new_entity();
+    entity_manager.register_new_component::<StubComponentA>();
+    entity_manager.register_new_component::<StubComponentB>();
+    entity_manager.add_component((0,0), StubComponentA{ counter: 0 });
+    entity_manager.add_component((2,0), StubComponentA{counter: 0});
+    entity_manager.add_component((1,0), StubComponentA{counter: 0});
+    entity_manager.add_component((1,0), StubComponentB{counter: 100});
+    let mut itb = entity_manager.iterator::<StubComponentB>();
+    let mut result = itb.next(None);
+    let mut result1 = itb.next(None);
+    assert_eq!(result.is_none(), true);
+    assert_eq!(result1.unwrap().0.borrow_mut().unwrap().counter, 100);
+}
+
+#[test]
 fn iterator_join_test(){
     let mut entity_manager = ECS::new();
     entity_manager.allocate_new_entity();
     entity_manager.allocate_new_entity();
     entity_manager.allocate_new_entity();
     entity_manager.register_new_component::<StubComponentA>();
+    entity_manager.register_new_component::<StubComponentB>();
     entity_manager.add_component((0,0), StubComponentA{ counter: 0 });
-    entity_manager.add_component((0,0), StubComponentB{ counter: 0 });
-    entity_manager.add_component((1,0), StubComponentA{ counter: 1 });
-    entity_manager.add_component((2,0), StubComponentA{ counter: 2 });
-    entity_manager.add_component((2,0), StubComponentB{ counter: 2 });
+    entity_manager.add_component((1,0), StubComponentA{counter: 0});
+    entity_manager.add_component((1,0), StubComponentB{counter: 100});
+    entity_manager.add_component((2,0), StubComponentA{counter: 0});
     let mut ita = entity_manager.iterator::<StubComponentA>();
     let mut itb = entity_manager.iterator::<StubComponentB>();
-    let mut joint_iter = ita.join(itb);
-    let mut res = joint_iter.into_vec();
-    assert_eq!(res[0].borrow_mut().unwrap().counter, 1);
-    assert_eq!(res[1].borrow_mut().unwrap().counter, 2);
+    let mut joint = ita.join(itb);
+    let mut res = joint.next(None);
+    let mut unwrapped = res.unwrap();
+    assert_eq!(unwrapped.0.borrow_mut().counter, 0);
+    assert_eq!(unwrapped.1.borrow_mut().counter, 100);
+
 }
 
