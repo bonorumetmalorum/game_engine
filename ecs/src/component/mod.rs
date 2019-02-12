@@ -12,7 +12,6 @@ pub trait Component: Downcast{
 
 impl_downcast!(Component);
 
-#[derive(PartialEq, Eq, Debug)]
 pub enum ComponentEntry<T: ?Sized>{
     Empty,
     Entry(Box<T>)
@@ -27,14 +26,34 @@ impl<T> ComponentEntry<T> {
     }
 }
 
-trait Storage: Downcast {
+pub trait Storage<'st> {
+    type Component: Sized + 'st;
+    type ComponentIterator: Iter<Item = &'st mut Self::Component>;
     fn remove(&mut self, EntityIndex) -> Result<EntityIndex, &str>;
+    fn get_mut_iter(&'st mut self) -> Self::ComponentIterator;
 }
-impl_downcast!(Storage);
+pub trait GenericComponentStorage: Downcast{
+    fn remove(&mut self, index: EntityIndex) -> Result<EntityIndex, &str>;
+}
+impl_downcast!(GenericComponentStorage);
+
+pub struct ComponentStore<T>(T);
+impl<'cs, T: 'static + Storage<'cs>> GenericComponentStorage for ComponentStore<T> {
+    fn remove(&mut self, index: (usize, u64)) -> Result<(usize, u64), &str> {
+        self.0.remove(index)
+    }
+}
+impl<T: 'static> ComponentStore<T> {
+    pub fn borrow_internal_mut(&mut self) -> &mut T {
+        &mut self.0
+    }
+}
 
 pub struct DenseComponentStorage<T>(Vec<ComponentEntry<T>>);
 
-impl<T: 'static> Storage for DenseComponentStorage<T> {
+impl<'it, T: 'static> Storage<'it> for DenseComponentStorage<T> {
+    type Component = ComponentEntry<T>;
+    type ComponentIterator = ComponentIterator<'it, T>;
 
     fn remove(&mut self, index: EntityIndex) -> Result<(usize, u64), &str> {
         if let Some(reference) = self.0.get_mut(index.0){
@@ -44,18 +63,25 @@ impl<T: 'static> Storage for DenseComponentStorage<T> {
             Err("index out of bounds")
         }
     }
+
+    fn get_mut_iter(&'it mut self) -> Self::ComponentIterator {
+        ComponentIterator{current_index: 0, st: self.0.iter_mut()}
+    }
 }
 
-impl<T> DenseComponentStorage<T> {
+impl<'it, T> DenseComponentStorage<T> {
     pub fn new() -> DenseComponentStorage<T>{
         DenseComponentStorage(Vec::new())
     }
 }
 
-pub struct ComponentStorage(HashMap<TypeId, Box<Storage>>); //I think here i need to store a Box any and store vectors in the any
+pub struct ComponentStorage(
+    HashMap<TypeId, Box<GenericComponentStorage>>
+);
+//I think here i need to store a Box any and store vectors in the any
 //this will allow to downcast to a Vec<T> and subsequently get the appropriate iterator.
 
-impl ComponentStorage {
+impl<'st> ComponentStorage {
 
     pub fn new() -> ComponentStorage {
         ComponentStorage(HashMap::new())
@@ -64,7 +90,8 @@ impl ComponentStorage {
     pub fn register_component<T:'static>(&mut self) -> Result<(usize), &str>{
         let compstrg: DenseComponentStorage<T> = DenseComponentStorage::new();
         let len = compstrg.0.len();
-        if let None = self.0.insert(TypeId::of::<T>(), Box::new(compstrg)) {
+        let componentstore = ComponentStore(compstrg);
+        if let None = self.0.insert(TypeId::of::<T>(), Box::new(componentstore)) {
             Ok(len)
         }else{
             Err("overwritten existing component storage")
@@ -73,10 +100,10 @@ impl ComponentStorage {
 
     pub fn add_component<T:'static>(&mut self, component: T, id: EntityIndex) -> Result<EntityIndex, &str> {
         if let Ok(storage) = self.get_mut::<T>(){
-            while id.0 > storage.0.len() {
-                storage.0.push(ComponentEntry::Empty);
+            while id.0 > (storage.0).0.len() {
+                (storage.0).0.push(ComponentEntry::Empty);
             }
-            storage.0.push( ComponentEntry::Entry(Box::new(component)));
+            (storage.0).0.push( ComponentEntry::Entry(Box::new(component)));
             Ok(id)
         }else{
             Err("component is not registered")
@@ -85,10 +112,10 @@ impl ComponentStorage {
 
     pub fn remove_component<T:'static>(&mut self, id: EntityIndex) -> Result<EntityIndex, &str>{
         if let Ok(storage) = self.get_mut::<T>(){
-            if id.0 >= storage.0.len() {
+            if id.0 >= (storage.0).0.len() {
                 Err("entity does not have component")
             }else{
-                storage.0[id.0] = ComponentEntry::Empty;
+                (storage.0).0[id.0] = ComponentEntry::Empty;
                 Ok(id)
             }
         }else{
@@ -109,9 +136,9 @@ impl ComponentStorage {
         status
     }
 
-    pub fn get<T: 'static>(&self) -> Result<&DenseComponentStorage<T>, &str> {
+    pub fn get<T: 'static>(&self) -> Result<&ComponentStore<DenseComponentStorage<T>>, &str> {
         if let Some(x) = self.0.get(&TypeId::of::<T>()){
-            if let Some(dc) = x.downcast_ref::<DenseComponentStorage<T>>() {
+            if let Some(dc) = x.downcast_ref::<ComponentStore<DenseComponentStorage<T>>>() {
                 Ok(dc)
             }else{
                 Err("downcast failed, type error")
@@ -121,9 +148,9 @@ impl ComponentStorage {
         }
     }
 
-    pub fn get_mut<T: 'static>(&mut self) -> Result<&mut DenseComponentStorage<T>, &str> {
+    pub fn get_mut<T: 'static>(&mut self) -> Result<&mut ComponentStore<DenseComponentStorage<T>>, &str> {
         if let Some(x) = self.0.get_mut(&TypeId::of::<T>()){
-            if let Some(dc) = x.downcast_mut::<DenseComponentStorage<T>>() {
+            if let Some(dc) = x.downcast_mut::<ComponentStore<DenseComponentStorage<T>>>() {
                 Ok(dc)
             }else{
                 Err("downcast failed, type error")
@@ -139,7 +166,7 @@ impl ComponentStorage {
 
     pub fn get_mut_iterator<T: 'static>(&mut self) -> Result<ComponentIterator<T>, &str>{
         if let Ok(entry) = self.get_mut::<T>(){
-            let it = entry.0.iter_mut();
+            let it = (entry.0).0.iter_mut();
             Ok(ComponentIterator{st: it, current_index: 0})
         }else{
             Err("Unregistered component")
@@ -153,6 +180,9 @@ pub trait Iter{
     type Item;
 
     fn next(&mut self, until: Option<usize>) -> Option<(Self::Item, usize)>;
+    fn join<H: Iter>(mut self, other: H) -> ComponentIteratorJoin<Self, H> where Self: Sized{
+        ComponentIteratorJoin(self, other)
+    }
     fn into_vec(mut self) -> Vec<Self::Item>;
 }
 
@@ -243,10 +273,6 @@ impl<'it, T: 'static> ComponentIterator<'it, T> {
             st: it,
             current_index: 0
         }
-    }
-
-    pub fn join<H>(&mut self, other: ComponentIterator<H>) -> ComponentIteratorJoin<T, H> {
-        unimplemented!()
     }
 
     pub fn index(&mut self) -> usize {

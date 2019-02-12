@@ -13,6 +13,10 @@ use entity::management::EntityAllocator;
 use entity::EntityIndex;
 use std::any::Any;
 use component::ComponentIterator;
+use component::Storage;
+use component::DenseComponentStorage;
+use component::ComponentEntry;
+use std::ops::DerefMut;
 
 //generational data structure
 pub struct ECS {
@@ -21,7 +25,7 @@ pub struct ECS {
     pub size: usize
 }
 
-impl ECS {
+impl<'cs> ECS {
 
     /*
     allocate a new empty entity
@@ -101,11 +105,21 @@ impl ECS {
         self.storage.get_mut_iterator::<T>().expect("Error creating iterator")
     }
 
+    pub fn get_component_handle<T: 'static>(&mut self) -> ComponentHandle<DenseComponentStorage<T>> {
+        let mut res = self.storage.get_mut::<T>().unwrap();
+        let mut strg = res.borrow_internal_mut();
+        ComponentHandle{ data: strg }
+    }
+
     /*
     returns a new empty entity storage
     */
     pub fn new() -> ECS {
         ECS {storage: ComponentStorage::new(), entity_list: EntityAllocator::new(), size: 0}
     }
+}
+
+pub struct ComponentHandle<'a, T: Storage<'a>>{
+    data: &'a mut T
 }
 

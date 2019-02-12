@@ -2,7 +2,8 @@ use component::Component;
 use ECS;
 use component::ComponentIterator;
 use component::Iter;
-use component::ComponentEntry;
+use component::ComponentEntry::*;
+use component::Storage;
 
 struct StubComponentA {
     pub counter: u8
@@ -154,13 +155,14 @@ fn iterator_join_test(){
     entity_manager.add_component((1,0), StubComponentA{counter: 0});
     entity_manager.add_component((1,0), StubComponentB{counter: 100});
     entity_manager.add_component((2,0), StubComponentA{counter: 0});
-    let mut ita = entity_manager.iterator::<StubComponentA>();
-    let mut itb = entity_manager.iterator::<StubComponentB>();
+    let mut compha = entity_manager.get_component_handle::<StubComponentA>();
+    let mut comphb = entity_manager.get_component_handle::<StubComponentB>();
+    let ita = compha.data.get_mut_iter();
+    let itb = comphb.data.get_mut_iter();
     let mut joint = ita.join(itb);
     let mut res = joint.next(None);
     let mut unwrapped = res.unwrap();
-    assert_eq!(unwrapped.0.borrow_mut().counter, 0);
-    assert_eq!(unwrapped.1.borrow_mut().counter, 100);
-
+    assert_eq!((unwrapped.0).0.borrow_mut().unwrap().counter, 0);
+    assert_eq!((unwrapped.0).1.borrow_mut().unwrap().counter, 100);
 }
 
