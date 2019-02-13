@@ -6,6 +6,26 @@ use core::borrow::BorrowMut;
 use std::slice;
 use downcast_rs::Downcast;
 use std::sync::RwLock;
+use std::sync::RwLockWriteGuard;
+use std::sync::RwLockReadGuard;
+
+pub struct ComponentWriteHandle<'l, T>{
+    w: RwLockWriteGuard<'l, T>
+}
+
+impl<'a, 'b, S: Storage<'b>> ComponentWriteHandle<'a, S>{
+    pub fn get(&'b self, id: EntityIndex) -> ComponentEntry<S::Component> {
+        self.w.deref().get(id)
+    }
+
+    pub fn get_mut_iter(&self) -> S::ComponentIterator {
+        //need to implement non mutable iterator
+    }
+}
+
+pub struct ComponentReadHandle<'l, T> {
+    r: RwLockReadGuard<'l, T>
+}
 
 pub trait Component: 'static + Sized + Send + Sync + Clone{
     type ComponentStorage: for<'st> Storage<'st, Component = Self>;
@@ -27,18 +47,39 @@ impl<T: Sized + Send + Sync + Clone> ComponentEntry<T> {
     }
 }
 
-pub trait Storage<'st>: 'static + Send + Sync + Clone {
+pub trait Storage<'st>: 'static + Send + Sync + Clone + Default {
     type Component: 'static + Send + Sync + Sized + Clone;
     type ComponentIterator: Iter<Item = &'st mut Self::Component>;
+    fn get(&self, id: EntityIndex) -> ComponentEntry<Self::Component>;
     fn remove(&mut self, EntityIndex) -> Result<EntityIndex, &str>;
     fn get_mut_iter(&'st mut self) -> Self::ComponentIterator;
+    fn insert(&mut self, index: EntityIndex, component: Self::Component) -> Result<EntityIndex, &str>;
+    fn len(&self) -> usize;
 }
+
 pub trait GenericComponentStorage: Downcast{
     fn remove(&mut self, index: EntityIndex) -> Result<EntityIndex, &str>;
 }
 impl_downcast!(GenericComponentStorage);
 
-pub struct ComponentStore<T>(RwLock<T>);
+pub struct ComponentStore<T>(pub RwLock<T>);
+
+//switch RwLockWriteGuard to ComponentWrite/Read Handle.
+impl<'st, T: Storage<'st>> ComponentStore<T> {
+    pub fn write_handle(&self) -> ComponentWriteHandle<T>{
+        let result = self.0.write().unwrap();
+        ComponentWriteHandle{ w: result }
+    }
+
+    pub fn read_handle(&self) -> ComponentReadHandle<T>{
+        let result = self.0.read().unwrap();
+        ComponentReadHandle{ r: result }
+    }
+
+    pub fn get_mut_handle(&mut self) -> &mut T {
+        self.0.get_mut().unwrap()
+    }
+}
 
 impl<'cs, T: 'static + Storage<'cs>> GenericComponentStorage for ComponentStore<T> {
     fn remove(&mut self, index: (usize, u64)) -> Result<(usize, u64), &str> {
@@ -49,9 +90,23 @@ impl<'cs, T: 'static + Storage<'cs>> GenericComponentStorage for ComponentStore<
 #[derive(Clone)]
 pub struct DenseComponentStorage<T: Send + Sync + Clone>(Vec<ComponentEntry<T>>);
 
-impl<'it, T: 'static + Send + Sync + Clone> Storage<'it> for DenseComponentStorage<T> {
-    type Component = ComponentEntry<T>;
+impl<T: Component> Default for DenseComponentStorage<T>{
+    fn default() -> Self {
+        DenseComponentStorage(Vec::new())
+    }
+}
+
+impl<'it, T: Component> Storage<'it> for DenseComponentStorage<T> {
+    type Component = T;
     type ComponentIterator = ComponentIterator<'it, T>;
+
+    fn get(&self, id: (usize, u64)) -> ComponentEntry<Self::Component> {
+        if let Some(x) = self.0.get(id.0) {
+            x
+        }else{
+            ComponentEntry::Empty
+        }
+    }
 
     fn remove(&mut self, index: EntityIndex) -> Result<(usize, u64), &str> {
         if let Some(reference) = self.0.get_mut(index.0){
@@ -64,6 +119,22 @@ impl<'it, T: 'static + Send + Sync + Clone> Storage<'it> for DenseComponentStora
 
     fn get_mut_iter(&'it mut self) -> Self::ComponentIterator {
         ComponentIterator{current_index: 0, st: self.0.iter_mut()}
+    }
+
+    fn insert(&mut self, index: (usize, u64), component: Self::Component) -> Result<EntityIndex, &str>{
+        if index.0 > self.len(){
+            while index.0 > self.len() {
+                self.0.push(ComponentEntry::Empty);
+            }
+            self.0.push(ComponentEntry::Entry(Box::new(component)));
+        }else{
+            self.0.insert(index.0, ComponentEntry::Entry(Box::new(component)));
+        }
+        Ok(index)
+    }
+
+    fn len(&self) -> usize {
+        self.0.len()
     }
 }
 
@@ -98,10 +169,8 @@ impl<'st> ComponentStorage {
 
     pub fn add_component<T: Component>(&mut self, component: T, id: EntityIndex) -> Result<EntityIndex, &str> {
         if let Ok(storage) = self.get_mut::<T>(){
-            while id.0 > (storage.0).0.len() {
-                (storage.0).0.push(ComponentEntry::Empty);
-            }
-            (storage.0).0.push( ComponentEntry::Entry(Box::new(component)));
+            let mut store = storage.0.get_mut().unwrap();
+            store.insert(id, component);
             Ok(id)
         }else{
             Err("component is not registered")
@@ -110,10 +179,11 @@ impl<'st> ComponentStorage {
 
     pub fn remove_component<T: Component>(&mut self, id: EntityIndex) -> Result<EntityIndex, &str>{
         if let Ok(storage) = self.get_mut::<T>(){
-            if id.0 >= (storage.0).0.len() {
+            let mut store = storage.0.get_mut().unwrap();
+            if id.0 >= store.len() {
                 Err("entity does not have component")
             }else{
-                (storage.0).0[id.0] = ComponentEntry::Empty;
+                store.remove(id);
                 Ok(id)
             }
         }else{
@@ -146,7 +216,7 @@ impl<'st> ComponentStorage {
         }
     }
 
-    pub fn get_mut<T: Component>(&mut self) -> Result<&mut ComponentStore<DenseComponentStorage<T>>, &str> {
+    pub fn get_mut<T: Component>(&mut self) -> Result<&mut ComponentStore<T::ComponentStorage>, &str> {
         if let Some(x) = self.0.get_mut(&TypeId::of::<T>()){
             if let Some(dc) = x.downcast_mut::<ComponentStore<T::ComponentStorage>>() {
                 Ok(dc)
@@ -162,14 +232,15 @@ impl<'st> ComponentStorage {
         self.0.len()
     }
 
-    pub fn get_mut_iterator<T: Component>(&mut self) -> Result<ComponentIterator<T>, &str>{
-        if let Ok(entry) = self.get_mut::<T>(){
-            let it = (entry.0).0.iter_mut();
-            Ok(ComponentIterator{st: it, current_index: 0})
-        }else{
-            Err("Unregistered component")
-        }
-    }
+//    pub fn get_mut_iterator<T: Component>(&mut self) -> Result<T, &str>{
+//        if let Ok(entry) = self.get_mut::<T>(){
+//            let mut storage = entry.write_handle();
+//            let it = storage.get_mut_iter();
+//            Ok(it)
+//        }else{
+//            Err("Unregistered component")
+//        }
+//    }
 
 }
 //I may be able to get away without implementing a trait for the iterators depending on how I tackle the system impls
@@ -227,7 +298,7 @@ pub struct ComponentIterator<'cs, T: 'cs + Send + Sync + Clone>{
 //maybe implement Iterator trait for ComponentIterator to allow for a better interface
 
 impl<'it, T: Send + Sync + Clone> Iter for ComponentIterator<'it, T>{
-    type Item = &'it mut ComponentEntry<T>;
+    type Item = &'it mut T;
 
     fn next(&mut self, until: Option<usize>) -> Option<(Self::Item, usize)> {
         let mut lim = until.unwrap_or(0);

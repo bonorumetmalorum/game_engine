@@ -18,6 +18,10 @@ use component::DenseComponentStorage;
 use component::ComponentEntry;
 use std::ops::DerefMut;
 use component::Component;
+use std::sync::RwLockWriteGuard;
+use std::sync::RwLockReadGuard;
+use component::ComponentReadHandle;
+use component::ComponentWriteHandle;
 
 pub struct ComponentHandle<'a, T: Storage<'a>>{
     data: &'a mut T
@@ -106,14 +110,26 @@ impl<'cs> ECS {
 //        }
 //    }
 
-    pub fn iterator<T: Component>(&mut self) -> ComponentIterator<T>{
-        self.storage.get_mut_iterator::<T>().expect("Error creating iterator")
+    pub fn iterator<T: Component>(&self) -> ComponentIterator<T>{
+        self.storage.get().unwrap().write_handle()
     }
 
-    pub fn get_component_read_handle<T: Component>(&self) -> ComponentHandle<DenseComponentStorage<T>> {
-        let mut res = self.storage.get::<T>().unwrap();
-        let mut strg = res.borrow_internal_mut();
-        ComponentHandle{ data: strg }
+    pub fn get_component_read_handle<T: Component>(&self) -> ComponentReadHandle<T::ComponentStorage> {
+        let res = self.storage.get::<T>().unwrap();
+        let strg = res.0.read().unwrap();
+        ComponentReadHandle{ r: strg }
+    }
+
+    pub fn get_component_write_handle<T: Component>(&self) -> ComponentWriteHandle<T::ComponentStorage> {
+        let res = self.storage.get::<T>().unwrap();
+        let strg = res.0.write().unwrap();
+        ComponentWriteHandle{ w: strg }
+    }
+
+    pub fn get_mut<T: Component>(&mut self) -> &mut T::ComponentStorage{
+        let mut res = self.storage.get_mut::<T>().unwrap();
+        let mut component = res.0.get_mut().unwrap();
+        component
     }
 
     /*
@@ -123,4 +139,3 @@ impl<'cs> ECS {
         ECS {storage: ComponentStorage::new(), entity_list: EntityAllocator::new(), size: 0}
     }
 }
-
