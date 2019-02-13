@@ -110,9 +110,9 @@ impl<'cs> ECS {
 //        }
 //    }
 
-    pub fn iterator<T: Component>(&self) -> ComponentIterator<T>{
-        self.storage.get().unwrap().write_handle()
-    }
+//    pub fn iterator<T: Component>(&self) -> {
+//        self.storage.get::<T>().unwrap().write_handle().get_mut_iter()
+//    }
 
     pub fn get_component_read_handle<T: Component>(&self) -> ComponentReadHandle<T::ComponentStorage> {
         let res = self.storage.get::<T>().unwrap();

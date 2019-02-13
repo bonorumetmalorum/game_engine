@@ -8,23 +8,35 @@ use downcast_rs::Downcast;
 use std::sync::RwLock;
 use std::sync::RwLockWriteGuard;
 use std::sync::RwLockReadGuard;
+use std::ops::Deref;
+use std::ops::DerefMut;
 
 pub struct ComponentWriteHandle<'l, T>{
     w: RwLockWriteGuard<'l, T>
 }
 
 impl<'a, 'b, S: Storage<'b>> ComponentWriteHandle<'a, S>{
-    pub fn get(&'b self, id: EntityIndex) -> ComponentEntry<S::Component> {
+    pub fn get(&'b self, id: EntityIndex) -> &ComponentEntry<S::Component> {
         self.w.deref().get(id)
     }
 
-    pub fn get_mut_iter(&self) -> S::ComponentIterator {
-        //need to implement non mutable iterator
+    pub fn get_mut_iter(&'b mut self) -> S::ComponentIterator {
+        self.w.deref().get_mut_iter()
     }
 }
 
 pub struct ComponentReadHandle<'l, T> {
     r: RwLockReadGuard<'l, T>
+}
+
+impl<'a, 'b, S:Storage<'b>> ComponentReadHandle<'a, S>{
+    pub fn get(&'b self, id: EntityIndex) -> &ComponentEntry<S::Component> {
+        self.r.deref().get(id)
+    }
+
+//    pub fn get_iterator(&'b mut self) -> S::ComponentIterator {
+//        unimplemented!()
+//    }
 }
 
 pub trait Component: 'static + Sized + Send + Sync + Clone{
@@ -49,8 +61,9 @@ impl<T: Sized + Send + Sync + Clone> ComponentEntry<T> {
 
 pub trait Storage<'st>: 'static + Send + Sync + Clone + Default {
     type Component: 'static + Send + Sync + Sized + Clone;
+    //add immutable iterator here
     type ComponentIterator: Iter<Item = &'st mut Self::Component>;
-    fn get(&self, id: EntityIndex) -> ComponentEntry<Self::Component>;
+    fn get(&self, id: EntityIndex) -> &ComponentEntry<Self::Component>;
     fn remove(&mut self, EntityIndex) -> Result<EntityIndex, &str>;
     fn get_mut_iter(&'st mut self) -> Self::ComponentIterator;
     fn insert(&mut self, index: EntityIndex, component: Self::Component) -> Result<EntityIndex, &str>;
@@ -100,7 +113,8 @@ impl<'it, T: Component> Storage<'it> for DenseComponentStorage<T> {
     type Component = T;
     type ComponentIterator = ComponentIterator<'it, T>;
 
-    fn get(&self, id: (usize, u64)) -> ComponentEntry<Self::Component> {
+    //potentially make this return a result type
+    fn get(&self, id: (usize, u64)) -> &ComponentEntry<Self::Component> {
         if let Some(x) = self.0.get(id.0) {
             x
         }else{
