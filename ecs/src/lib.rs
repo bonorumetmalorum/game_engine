@@ -17,6 +17,11 @@ use component::Storage;
 use component::DenseComponentStorage;
 use component::ComponentEntry;
 use std::ops::DerefMut;
+use component::Component;
+
+pub struct ComponentHandle<'a, T: Storage<'a>>{
+    data: &'a mut T
+}
 
 //generational data structure
 pub struct ECS {
@@ -57,7 +62,7 @@ impl<'cs> ECS {
     adds a component to an entity
     if the component has not been registered to the manager, it will panic
     */
-    pub fn add_component<T: 'static>(&mut self, index: EntityIndex, component: T) -> Result<EntityIndex, &str>{
+    pub fn add_component<T: Component>(&mut self, index: EntityIndex, component: T) -> Result<EntityIndex, &str>{
         if index.1 == self.entity_list.entity_list[index.0].generation && self.entity_list.entity_list[index.0].is_live {
             self.storage.add_component(component, index)
         }else{
@@ -68,7 +73,7 @@ impl<'cs> ECS {
     /*
     register a new component to the manager
     */
-    pub fn register_new_component<T: 'static>(&mut self) -> Result<usize, &str> {
+    pub fn register_new_component<T: Component>(&mut self) -> Result<usize, &str> {
         let mut component_storage: Vec<Option<Box<Any>>> = Vec::with_capacity(self.size);
         for _i in 0 .. self.size {
             component_storage.push(None);
@@ -79,7 +84,7 @@ impl<'cs> ECS {
     /*
         remove a component from an entity
     */
-    pub fn remove_component<T: 'static>(&mut self, index: EntityIndex) -> Result<EntityIndex, &str>{
+    pub fn remove_component<T: Component>(&mut self, index: EntityIndex) -> Result<EntityIndex, &str>{
         if index.1 != self.entity_list.entity_list[index.0].generation && !self.entity_list.entity_list[index.0].is_live {
             Err("invalid index")
         }else{
@@ -101,12 +106,12 @@ impl<'cs> ECS {
 //        }
 //    }
 
-    pub fn iterator<T: 'static>(&mut self) -> ComponentIterator<T>{
+    pub fn iterator<T: Component>(&mut self) -> ComponentIterator<T>{
         self.storage.get_mut_iterator::<T>().expect("Error creating iterator")
     }
 
-    pub fn get_component_handle<T: 'static>(&mut self) -> ComponentHandle<DenseComponentStorage<T>> {
-        let mut res = self.storage.get_mut::<T>().unwrap();
+    pub fn get_component_read_handle<T: Component>(&self) -> ComponentHandle<DenseComponentStorage<T>> {
+        let mut res = self.storage.get::<T>().unwrap();
         let mut strg = res.borrow_internal_mut();
         ComponentHandle{ data: strg }
     }
@@ -117,9 +122,5 @@ impl<'cs> ECS {
     pub fn new() -> ECS {
         ECS {storage: ComponentStorage::new(), entity_list: EntityAllocator::new(), size: 0}
     }
-}
-
-pub struct ComponentHandle<'a, T: Storage<'a>>{
-    data: &'a mut T
 }
 
