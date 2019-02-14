@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use std::any::TypeId;
-use std::any::Any;
 use entity::EntityIndex;
 use core::borrow::BorrowMut;
 use std::slice;
