@@ -119,17 +119,18 @@ fn get_component_test(){
         let mut it = comp.get_mut_iter();
         loop{
             if let Some(x) = it.next(None) {
-                x.0.borrow_mut().unwrap().counter += 1;
+                x.0.counter += 1;
             }else{
                 break;
             }
         }
     }
-    let mut it = entity_manager.iterator::<StubComponentA>();
+    let mut handle = entity_manager.get_component_write_handle::<StubComponentA>();
+    let mut it = handle.get_mut_iter();
     let mut res = it.into_vec();
-    assert_eq!(res[0].borrow_mut().unwrap().counter, 1);
-    assert_eq!(res[1].borrow_mut().unwrap().counter, 2);
-    assert_eq!(res[2].borrow_mut().unwrap().counter, 3);
+    assert_eq!(res[0].counter, 1);
+    assert_eq!(res[1].counter, 2);
+    assert_eq!(res[2].counter, 3);
 }
 
 #[test]
@@ -144,11 +145,12 @@ fn iterator_test_singular(){
     entity_manager.add_component((2,0), StubComponentA{counter: 0});
     entity_manager.add_component((1,0), StubComponentA{counter: 0});
     entity_manager.add_component((1,0), StubComponentB{counter: 100});
-    let mut itb = entity_manager.iterator::<StubComponentB>();
+    let mut handle = entity_manager.get_component_write_handle::<StubComponentB>();
+    let mut itb = handle.get_mut_iter();
     let mut result = itb.next(None);
     let mut result1 = itb.next(None);
     assert_eq!(result.is_none(), true);
-    assert_eq!(result1.unwrap().0.borrow_mut().unwrap().counter, 100);
+    assert_eq!(result1.unwrap().0.counter, 100);
 }
 
 #[test]
@@ -170,7 +172,7 @@ fn iterator_join_test(){
     let mut joint = ita.join(itb);
     let mut res = joint.next(None);
     let mut unwrapped = res.unwrap();
-    assert_eq!((unwrapped.0).0.borrow_mut().unwrap().counter, 0);
-    assert_eq!((unwrapped.0).1.borrow_mut().unwrap().counter, 100);
+    assert_eq!((unwrapped.0).0.counter, 0);
+    assert_eq!((unwrapped.0).1.counter, 100);
 }
 
