@@ -171,7 +171,8 @@ fn iterator_join_test(){
     let itb = comphb.get_mut_iter();
     let mut joint = ita.join(itb);
     let mut res = joint.next(None);
-    let mut unwrapped = res.unwrap();
+    let mut res2 = joint.next(None);
+    let mut unwrapped = res2.unwrap();
     assert_eq!((unwrapped.0).0.counter, 0);
     assert_eq!((unwrapped.0).1.counter, 100);
 }
