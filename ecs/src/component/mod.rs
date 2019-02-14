@@ -12,7 +12,7 @@ use std::ops::Deref;
 use std::ops::DerefMut;
 
 pub struct ComponentWriteHandle<'l, T>{
-    w: RwLockWriteGuard<'l, T>
+    pub w: RwLockWriteGuard<'l, T>
 }
 
 impl<'a, 'b, S: Storage<'b>> ComponentWriteHandle<'a, S>{
@@ -21,12 +21,12 @@ impl<'a, 'b, S: Storage<'b>> ComponentWriteHandle<'a, S>{
     }
 
     pub fn get_mut_iter(&'b mut self) -> S::ComponentIterator {
-        self.w.deref().get_mut_iter()
+        self.w.deref_mut().get_mut_iter()
     }
 }
 
 pub struct ComponentReadHandle<'l, T> {
-    r: RwLockReadGuard<'l, T>
+    pub r: RwLockReadGuard<'l, T>
 }
 
 impl<'a, 'b, S:Storage<'b>> ComponentReadHandle<'a, S>{
@@ -62,7 +62,7 @@ impl<T: Sized + Send + Sync + Clone> ComponentEntry<T> {
 pub trait Storage<'st>: 'static + Send + Sync + Clone + Default {
     type Component: 'static + Send + Sync + Sized + Clone;
     //add immutable iterator here
-    type ComponentIterator: Iter<Item = &'st mut Self::Component>;
+    type ComponentIterator: Iter<Item = &'st mut Box<Self::Component>>;
     fn get(&self, id: EntityIndex) -> &ComponentEntry<Self::Component>;
     fn remove(&mut self, EntityIndex) -> Result<EntityIndex, &str>;
     fn get_mut_iter(&'st mut self) -> Self::ComponentIterator;
@@ -118,7 +118,7 @@ impl<'it, T: Component> Storage<'it> for DenseComponentStorage<T> {
         if let Some(x) = self.0.get(id.0) {
             x
         }else{
-            ComponentEntry::Empty
+            &ComponentEntry::Empty
         }
     }
 
@@ -311,8 +311,8 @@ pub struct ComponentIterator<'cs, T: 'cs + Send + Sync + Clone>{
 
 //maybe implement Iterator trait for ComponentIterator to allow for a better interface
 
-impl<'it, T: Send + Sync + Clone> Iter for ComponentIterator<'it, T>{
-    type Item = &'it mut T;
+impl<'it, T: Component> Iter for ComponentIterator<'it, T>{
+    type Item = &'it mut Box<T>;
 
     fn next(&mut self, until: Option<usize>) -> Option<(Self::Item, usize)> {
         let mut lim = until.unwrap_or(0);
@@ -330,7 +330,7 @@ impl<'it, T: Send + Sync + Clone> Iter for ComponentIterator<'it, T>{
             }
 
             match r {
-                Some(ComponentEntry::Entry(_)) => {return Some((r.unwrap(), i))},
+                Some(ComponentEntry::Entry(ref mut v)) => {return Some((v, i))},
                 _ => {return None}
             }
 
@@ -338,10 +338,11 @@ impl<'it, T: Send + Sync + Clone> Iter for ComponentIterator<'it, T>{
     }
 
     fn into_vec(mut self) -> Vec<Self::Item> {
-        let mut result: Vec<&mut ComponentEntry<T>> = vec![];
+        let mut result: Vec<&mut Box<T>> = vec![];
         loop{
             match self.st.next() {
-                Some(val) => result.push(val),
+                Some(ComponentEntry::Entry(ref mut val)) => result.push(val),
+                Some(ComponentEntry::Empty) => continue,
                 None => break
             }
         }
