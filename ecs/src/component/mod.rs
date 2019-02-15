@@ -265,8 +265,8 @@ pub trait Iter{
     fn join<H: Iter>(mut self, other: H) -> ComponentIteratorJoin<Self, H> where Self: Sized{
         ComponentIteratorJoin(self, other)
     }
-    fn into_iterator_wrapper(self) -> ComponentIteratorWrapper<Self> where Self: Sized {
-        ComponentIteratorWrapper(self)
+    fn into_iterator_wrapper(self) -> IteratorWrapper<Self> where Self: Sized {
+        IteratorWrapper(self)
     }
 }
 
@@ -328,7 +328,8 @@ impl<'it, T: Component> Iter for ComponentIterator<'it, T>{
 
             match r {
                 Some(ComponentEntry::Entry(ref mut v)) => {return Some((v, i))},
-                _ => {return None}
+                Some(_) => continue,
+                None => {return None}
             }
 
         }
@@ -349,9 +350,9 @@ impl<'it, T: 'static + Send + Sync + Clone> ComponentIterator<'it, T> {
     }
 }
 
-pub struct ComponentIteratorWrapper<H>(H);
+pub struct IteratorWrapper<H>(H);
 
-impl<H> Iterator for ComponentIteratorWrapper<H> where H: Iter{
+impl<H> Iterator for IteratorWrapper<H> where H: Iter{
     type Item = H::Item;
 
     fn next(&mut self) -> Option<Self::Item> {

@@ -127,7 +127,8 @@ fn get_component_test(){
     }
     let mut handle = entity_manager.get_component_write_handle::<StubComponentA>();
     let mut it = handle.get_mut_iter();
-    let mut res = it.into_vec();
+    let mut iw = it.into_iterator_wrapper();
+    let res: Vec<&mut Box<StubComponentA>> = iw.collect();
     assert_eq!(res[0].counter, 1);
     assert_eq!(res[1].counter, 2);
     assert_eq!(res[2].counter, 3);
@@ -149,8 +150,9 @@ fn iterator_test_singular(){
     let mut itb = handle.get_mut_iter();
     let mut result = itb.next_element(None);
     let mut result1 = itb.next_element(None);
-    assert_eq!(result.is_none(), true);
-    assert_eq!(result1.unwrap().0.counter, 100);
+    assert_eq!(result.is_none(), false);
+    assert_eq!(result.unwrap().0.counter, 100);
+    assert_eq!(result1.is_none(), true);
 }
 
 #[test]
@@ -170,16 +172,60 @@ fn iterator_join_test(){
     let ita = compha.get_mut_iter();
     let itb = comphb.get_mut_iter();
     let mut joint = ita.join(itb);
-    let mut res = joint.next(None);
-    let mut res2 = joint.next(None);
-    let mut unwrapped = res2.unwrap();
-    assert_eq!((unwrapped.0).0.counter, 0);
-    assert_eq!((unwrapped.0).1.counter, 100);
+    let mut jit = joint.into_iterator_wrapper();
+    let mut res = jit.next();
+    let mut unwrapped = res.unwrap();
+    assert_eq!((unwrapped.0).counter, 0);
+    assert_eq!((unwrapped.1).counter, 100);
 }
 
 
 #[test]
-fn iterator_join_vec_test(){
+fn iterator_vec_test(){
+    let mut entity_manager = ECS::new();
+    entity_manager.allocate_new_entity();
+    entity_manager.allocate_new_entity();
+    entity_manager.allocate_new_entity();
+    entity_manager.register_new_component::<StubComponentA>();
+    entity_manager.register_new_component::<StubComponentB>();
+    entity_manager.add_component((0,0), StubComponentA{ counter: 0 });
+    entity_manager.add_component((1,0), StubComponentA{counter: 0});
+    entity_manager.add_component((1,0), StubComponentB{counter: 100});
+    entity_manager.add_component((2,0), StubComponentA{counter: 0});
+    let mut compha = entity_manager.get_component_write_handle::<StubComponentA>();
+    let ita = compha.get_mut_iter();
+    let mut jit = ita.into_iterator_wrapper();
+    let result: Vec<&mut Box<StubComponentA>> = jit.collect();
+    assert_eq!(result.len(), 3);
+}
+
+#[test]
+fn iterator_joint_vec_test(){
+    let mut entity_manager = ECS::new();
+    entity_manager.allocate_new_entity();
+    entity_manager.allocate_new_entity();
+    entity_manager.allocate_new_entity();
+    entity_manager.register_new_component::<StubComponentA>();
+    entity_manager.register_new_component::<StubComponentB>();
+    entity_manager.add_component((0,0), StubComponentA{ counter: 0 });
+    entity_manager.add_component((0,0), StubComponentB{ counter: 0 });
+    entity_manager.add_component((1,0), StubComponentA{counter: 0});
+    entity_manager.add_component((1,0), StubComponentB{counter: 100});
+    entity_manager.add_component((2,0), StubComponentA{counter: 0});
+    entity_manager.add_component((2,0), StubComponentB{counter: 0});
+    let mut compha = entity_manager.get_component_write_handle::<StubComponentA>();
+    let mut comphb = entity_manager.get_component_write_handle::<StubComponentB>();
+    let ita = compha.get_mut_iter();
+    let itb = comphb.get_mut_iter();
+    let mut joint = ita.join(itb);
+    let mut jit = joint.into_iterator_wrapper();
+    let result: Vec<(&mut Box<StubComponentA>, &mut Box<StubComponentB>)> = jit.collect();
+    assert_eq!(result.len(), 3);
+}
+
+
+#[test]
+fn iterator_joint_uneven_vec_test(){
     let mut entity_manager = ECS::new();
     entity_manager.allocate_new_entity();
     entity_manager.allocate_new_entity();
@@ -195,8 +241,9 @@ fn iterator_join_vec_test(){
     let ita = compha.get_mut_iter();
     let itb = comphb.get_mut_iter();
     let mut joint = ita.join(itb);
-    let result = joint.into_vec();
-    assert_eq!((unwrapped.0).0.counter, 0);
-    assert_eq!((unwrapped.0).1.counter, 100);
+    let mut jit = joint.into_iterator_wrapper();
+    let result = jit.collect::<Vec<_>>();
+    assert_eq!(result.len(), 1);
 }
+
 
