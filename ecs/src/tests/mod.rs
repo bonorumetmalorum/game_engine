@@ -246,4 +246,31 @@ fn iterator_joint_uneven_vec_test(){
     assert_eq!(result.len(), 1);
 }
 
+#[test]
+fn entity_iterator_test() {
+    let mut entity_manager = ECS::new();
+    entity_manager.allocate_new_entity();
+    entity_manager.allocate_new_entity();
+    entity_manager.allocate_new_entity();
+    entity_manager.register_new_component::<StubComponentA>();
+    entity_manager.register_new_component::<StubComponentB>();
+    entity_manager.add_component((0, 0), StubComponentA { counter: 0 });
+    entity_manager.add_component((1, 0), StubComponentA { counter: 0 });
+    entity_manager.add_component((1, 0), StubComponentB { counter: 100 });
+    entity_manager.add_component((2, 0), StubComponentA { counter: 0 });
+    let mut ent_it = entity_manager.get_entity_iterator_live();
+    let mut compha = entity_manager.get_component_write_handle::<StubComponentA>();
+    let ita = compha.get_mut_iter();
+    let mut jointea = ent_it.join(ita);
+
+}
+
+#[test]
+fn entity_iterator_live_only_test(){
+
+}
+#[test]
+fn entity_iterator_joint_test(){
+
+}
 

@@ -44,15 +44,37 @@ impl EntityAllocator {
             Err("incorrect generation")
         }
     }
+
+    pub fn get_iter_live(&self) -> EntityIteratorLive{
+        EntityIteratorLive{
+            st: self.entity_list.iter(),
+            current_index: 0
+        }
+    }
+
+    pub fn get_iter(&self) -> EntityIterator{
+        EntityIterator{
+            st: self.entity_list.iter(),
+            current_index: 0
+        }
+    }
+
+    pub fn set_live(&mut self, id: EntityIndex) -> bool {
+        unimplemented!()
+    }
+
+    pub fn set_dead(&mut self, id: EntityIndex) -> bool {
+        unimplemented!()
+    }
 }
 
-pub struct EntityIterator<'cs>{
-    st: slice::IterMut<'cs, Entry>,
+pub struct EntityIteratorLive<'cs>{
+    st: slice::Iter<'cs, Entry>,
     current_index: usize
 }
 
-impl<'cs> Iter for EntityIterator<'cs> {
-    type Item = &'cs mut Entry;
+impl<'cs> Iter for EntityIteratorLive<'cs> {
+    type Item = &'cs Entry;
     //gets the next live entry
     fn next_element(&mut self, until: Option<usize>) -> Option<(Self::Item, usize)> {
         let next = until.unwrap_or(0);
@@ -76,3 +98,35 @@ impl<'cs> Iter for EntityIterator<'cs> {
         }
     }
 }
+
+pub struct EntityIterator<'cs>{
+    st: slice::Iter<'cs, Entry>,
+    current_index: usize
+}
+
+impl<'cs> Iter for EntityIterator<'cs> {
+    type Item = &'cs Entry;
+    //gets the next live entry
+    fn next_element(&mut self, until: Option<usize>) -> Option<(Self::Item, usize)> {
+        let next = until.unwrap_or(0);
+        loop{
+            let r;
+            let i;
+            if next > self.current_index {
+                r = self.st.nth(next - self.current_index);
+                i = next;
+                self.current_index = next + 1;
+            }else{
+                r = self.st.next();
+                i = self.current_index;
+                self.current_index += 1;
+            }
+
+            match r {
+                Some(entry) => {return Some((entry, self.current_index))}
+                None => return None
+            }
+        }
+    }
+}
+

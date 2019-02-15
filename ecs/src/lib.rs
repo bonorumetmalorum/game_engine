@@ -21,6 +21,8 @@ use std::sync::RwLockWriteGuard;
 use std::sync::RwLockReadGuard;
 use component::ComponentReadHandle;
 use component::ComponentWriteHandle;
+use entity::management::EntityIterator;
+use entity::management::EntityIteratorLive;
 
 pub struct ComponentHandle<'a, T: Storage<'a>>{
     data: &'a mut T
@@ -129,6 +131,22 @@ impl<'cs> ECS {
         let mut res = self.storage.get_mut::<T>().unwrap();
         let mut component = res.0.get_mut().unwrap();
         component
+    }
+
+    pub fn get_entity_iterator_live(&self) -> EntityIteratorLive {
+        self.entity_list.get_iter_live()
+    }
+
+    pub fn get_entity_iterator(&self) -> EntityIterator {
+        self.entity_list.get_iter()
+    }
+
+    pub fn set_entity_dead(&mut self, id: EntityIndex) -> bool {
+        self.entity_list.set_dead(id)
+    }
+
+    pub fn set_entity_live(&mut self, id: EntityIndex) -> bool {
+        self.entity_list.set_live(id)
     }
 
     /*
