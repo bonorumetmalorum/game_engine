@@ -1,4 +1,7 @@
 use super::*;
+use core::slice;
+use component::Iter;
+
 //entry to define an allocation into a generational data structure
 pub struct Entry {
     pub is_live: bool,
@@ -40,5 +43,37 @@ impl EntityAllocator {
         }else{
             Err("incorrect generation")
         }
+    }
+}
+
+pub struct EntityIterator<'cs>{
+    st: slice::IterMut<'cs, Entry>,
+    current_index: usize
+}
+
+impl<'cs> Iter for EntityIterator<'cs> {
+    type Item = &'cs mut Entry;
+
+    fn next(&mut self, until: Option<usize>) -> Option<(Self::Item, usize)> {
+        if let Some(x) = self.st.next(){
+            if x.is_live {
+                Some((x, self.current_index))
+            }else {
+                None
+            }
+        }else{
+            None
+        }
+    }
+
+    fn into_vec(mut self) -> Vec<Self::Item> {
+        let mut res = vec![];
+        loop{
+            match self.next() {
+                Some(x) => res.push(x.0),
+                None => break,
+            }    
+        }
+        res
     }
 }
