@@ -261,11 +261,13 @@ impl<'st> ComponentStorage {
 pub trait Iter{
     type Item;
 
-    fn next(&mut self, until: Option<usize>) -> Option<(Self::Item, usize)>;
+    fn next_element(&mut self, until: Option<usize>) -> Option<(Self::Item, usize)>;
     fn join<H: Iter>(mut self, other: H) -> ComponentIteratorJoin<Self, H> where Self: Sized{
         ComponentIteratorJoin(self, other)
     }
-    fn into_vec(mut self) -> Vec<Self::Item>;
+    fn into_iterator_wrapper(self) -> ComponentIteratorWrapper<Self> where Self: Sized {
+        ComponentIteratorWrapper(self)
+    }
 }
 
 pub struct ComponentIteratorJoin<H, T>(H, T);
@@ -273,18 +275,18 @@ pub struct ComponentIteratorJoin<H, T>(H, T);
 impl<H: Iter, T: Iter> Iter for ComponentIteratorJoin<H, T> {
     type Item = (H::Item, T::Item);
 
-    fn next(&mut self, until: Option<usize>) -> Option<(Self::Item, usize)> {
-        match (self.0.next(until), self.1.next(until)){
+    fn next_element(&mut self, until: Option<usize>) -> Option<(Self::Item, usize)> {
+        match (self.0.next_element(until), self.1.next_element(until)){
             (Some((mut i1, mut ind1)), Some((mut i2, mut ind2))) => loop {
                 if ind1 < ind2 {
-                    if let Some(res) = self.0.next(Some(ind2)) {
+                    if let Some(res) = self.0.next_element(Some(ind2)) {
                         i1 = res.0;
                         ind1 = res.1;
                     }else{
                         return None;
                     }
                 } else if ind1 > ind2 {
-                    if let Some(res) = self.1.next(Some(ind1)){
+                    if let Some(res) = self.1.next_element(Some(ind1)){
                         i2 = res.0;
                         ind2 = res.1;
                     }else{
@@ -296,10 +298,6 @@ impl<H: Iter, T: Iter> Iter for ComponentIteratorJoin<H, T> {
             },
             _ => None
         }
-    }
-
-    fn into_vec(mut self) -> Vec<Self::Item> {
-        unimplemented!()
     }
 }
 
@@ -313,7 +311,7 @@ pub struct ComponentIterator<'cs, T: 'cs + Send + Sync + Clone>{
 impl<'it, T: Component> Iter for ComponentIterator<'it, T>{
     type Item = &'it mut Box<T>;
 
-    fn next(&mut self, until: Option<usize>) -> Option<(Self::Item, usize)> {
+    fn next_element(&mut self, until: Option<usize>) -> Option<(Self::Item, usize)> {
         let mut lim = until.unwrap_or(0);
         loop{
             let r;
@@ -335,18 +333,6 @@ impl<'it, T: Component> Iter for ComponentIterator<'it, T>{
 
         }
     }
-
-    fn into_vec(mut self) -> Vec<Self::Item> {
-        let mut result: Vec<&mut Box<T>> = vec![];
-        loop{
-            match self.st.next() {
-                Some(ComponentEntry::Entry(ref mut val)) => result.push(val),
-                Some(ComponentEntry::Empty) => continue,
-                None => break
-            }
-        }
-        result
-    }
 }
 
 impl<'it, T: 'static + Send + Sync + Clone> ComponentIterator<'it, T> {
@@ -360,6 +346,20 @@ impl<'it, T: 'static + Send + Sync + Clone> ComponentIterator<'it, T> {
 
     pub fn index(&mut self) -> usize {
         self.current_index
+    }
+}
+
+pub struct ComponentIteratorWrapper<H>(H);
+
+impl<H> Iterator for ComponentIteratorWrapper<H> where H: Iter{
+    type Item = H::Item;
+
+    fn next(&mut self) -> Option<Self::Item> {
+            if let Some(val) = self.0.next_element(None){
+            Some(val.0)
+        }else{
+            None
+        }
     }
 }
 

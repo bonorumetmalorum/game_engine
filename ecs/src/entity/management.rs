@@ -53,27 +53,26 @@ pub struct EntityIterator<'cs>{
 
 impl<'cs> Iter for EntityIterator<'cs> {
     type Item = &'cs mut Entry;
-
-    fn next(&mut self, until: Option<usize>) -> Option<(Self::Item, usize)> {
-        if let Some(x) = self.st.next(){
-            if x.is_live {
-                Some((x, self.current_index))
-            }else {
-                None
-            }
-        }else{
-            None
-        }
-    }
-
-    fn into_vec(mut self) -> Vec<Self::Item> {
-        let mut res = vec![];
+    //gets the next live entry
+    fn next_element(&mut self, until: Option<usize>) -> Option<(Self::Item, usize)> {
+        let next = until.unwrap_or(0);
         loop{
-            match self.next() {
-                Some(x) => res.push(x.0),
-                None => break,
-            }    
+            let r;
+            let i;
+            if next > self.current_index {
+                r = self.st.nth(next - self.current_index);
+                i = next;
+                self.current_index = next + 1;
+            }else{
+                r = self.st.next();
+                i = self.current_index;
+                self.current_index += 1;
+            }
+
+            match r {
+                Some(entry) => if entry.is_live {return Some((entry, self.current_index))} else {continue}
+                None => return None
+            }
         }
-        res
     }
 }

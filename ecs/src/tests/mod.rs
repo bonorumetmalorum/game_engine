@@ -118,7 +118,7 @@ fn get_component_test(){
         let mut comp = entity_manager.get_mut::<StubComponentA>();
         let mut it = comp.get_mut_iter();
         loop{
-            if let Some(x) = it.next(None) {
+            if let Some(x) = it.next_element(None) {
                 x.0.counter += 1;
             }else{
                 break;
@@ -147,8 +147,8 @@ fn iterator_test_singular(){
     entity_manager.add_component((1,0), StubComponentB{counter: 100});
     let mut handle = entity_manager.get_component_write_handle::<StubComponentB>();
     let mut itb = handle.get_mut_iter();
-    let mut result = itb.next(None);
-    let mut result1 = itb.next(None);
+    let mut result = itb.next_element(None);
+    let mut result1 = itb.next_element(None);
     assert_eq!(result.is_none(), true);
     assert_eq!(result1.unwrap().0.counter, 100);
 }
@@ -173,6 +173,29 @@ fn iterator_join_test(){
     let mut res = joint.next(None);
     let mut res2 = joint.next(None);
     let mut unwrapped = res2.unwrap();
+    assert_eq!((unwrapped.0).0.counter, 0);
+    assert_eq!((unwrapped.0).1.counter, 100);
+}
+
+
+#[test]
+fn iterator_join_vec_test(){
+    let mut entity_manager = ECS::new();
+    entity_manager.allocate_new_entity();
+    entity_manager.allocate_new_entity();
+    entity_manager.allocate_new_entity();
+    entity_manager.register_new_component::<StubComponentA>();
+    entity_manager.register_new_component::<StubComponentB>();
+    entity_manager.add_component((0,0), StubComponentA{ counter: 0 });
+    entity_manager.add_component((1,0), StubComponentA{counter: 0});
+    entity_manager.add_component((1,0), StubComponentB{counter: 100});
+    entity_manager.add_component((2,0), StubComponentA{counter: 0});
+    let mut compha = entity_manager.get_component_write_handle::<StubComponentA>();
+    let mut comphb = entity_manager.get_component_write_handle::<StubComponentB>();
+    let ita = compha.get_mut_iter();
+    let itb = comphb.get_mut_iter();
+    let mut joint = ita.join(itb);
+    let result = joint.into_vec();
     assert_eq!((unwrapped.0).0.counter, 0);
     assert_eq!((unwrapped.0).1.counter, 100);
 }
