@@ -19,7 +19,7 @@ impl<'a, 'b, S: Storage<'b>> ComponentWriteHandle<'a, S>{
         self.w.deref().get(id)
     }
 
-    pub fn get_mut_iter(&'b mut self) -> S::ComponentIterator {
+    pub fn get_mut_iter(&'b mut self) -> S::ComponentIteratorMut {
         self.w.deref_mut().get_mut_iter()
     }
 }
@@ -33,9 +33,9 @@ impl<'a, 'b, S:Storage<'b>> ComponentReadHandle<'a, S>{
         self.r.deref().get(id)
     }
 
-//    pub fn get_iterator(&'b mut self) -> S::ComponentIterator {
-//        unimplemented!()
-//    }
+    pub fn get_iterator(&'b mut self) -> S::ComponentIterator {
+        self.r.deref().get_iter()
+    }
 }
 
 pub trait Component: 'static + Sized + Send + Sync + Clone{
@@ -60,11 +60,13 @@ impl<T: Sized + Send + Sync + Clone> ComponentEntry<T> {
 
 pub trait Storage<'st>: 'static + Send + Sync + Clone + Default {
     type Component: 'static + Send + Sync + Sized + Clone;
-    //add immutable iterator here
-    type ComponentIterator: Iter<Item = &'st mut Box<Self::Component>>;
+    type ComponentIteratorMut: Iter<Item = &'st mut Box<Self::Component>>;
+    type ComponentIterator: Iter<Item = &'st Box<Self::Component>>;
     fn get(&self, id: EntityIndex) -> &ComponentEntry<Self::Component>;
     fn remove(&mut self, EntityIndex) -> Result<EntityIndex, &str>;
-    fn get_mut_iter(&'st mut self) -> Self::ComponentIterator;
+    fn get_mut_iter(&'st mut self) -> Self::ComponentIteratorMut;
+    fn get_iter(&'st self) -> Self::ComponentIterator;
+
     fn insert(&mut self, index: EntityIndex, component: Self::Component) -> Result<EntityIndex, &str>;
     fn len(&self) -> usize;
 }
@@ -110,6 +112,7 @@ impl<T: Component> Default for DenseComponentStorage<T>{
 
 impl<'it, T: Component> Storage<'it> for DenseComponentStorage<T> {
     type Component = T;
+    type ComponentIteratorMut = ComponentIteratorMut<'it, T>;
     type ComponentIterator = ComponentIterator<'it, T>;
 
     //potentially make this return a result type
@@ -130,8 +133,12 @@ impl<'it, T: Component> Storage<'it> for DenseComponentStorage<T> {
         }
     }
 
-    fn get_mut_iter(&'it mut self) -> Self::ComponentIterator {
-        ComponentIterator{current_index: 0, st: self.0.iter_mut()}
+    fn get_mut_iter(&'it mut self) -> Self::ComponentIteratorMut {
+        ComponentIteratorMut{current_index: 0, st: self.0.iter_mut()}
+    }
+
+    fn get_iter(&'it self) -> Self::ComponentIterator {
+        ComponentIterator{ st: self.0.iter(), current_index: 0 }
     }
 
     fn insert(&mut self, index: (usize, u64), component: Self::Component) -> Result<EntityIndex, &str>{
@@ -301,14 +308,12 @@ impl<H: Iter, T: Iter> Iter for ComponentIteratorJoin<H, T> {
     }
 }
 
-pub struct ComponentIterator<'cs, T: 'cs + Send + Sync + Clone>{
+pub struct ComponentIteratorMut<'cs, T: 'cs + Send + Sync + Clone>{
     st: slice::IterMut<'cs, ComponentEntry<T>>,
     current_index: usize
 }
 
-//maybe implement Iterator trait for ComponentIterator to allow for a better interface
-
-impl<'it, T: Component> Iter for ComponentIterator<'it, T>{
+impl<'it, T: Component> Iter for ComponentIteratorMut<'it, T>{
     type Item = &'it mut Box<T>;
 
     fn next_element(&mut self, until: Option<usize>) -> Option<(Self::Item, usize)> {
@@ -336,9 +341,9 @@ impl<'it, T: Component> Iter for ComponentIterator<'it, T>{
     }
 }
 
-impl<'it, T: 'static + Send + Sync + Clone> ComponentIterator<'it, T> {
+impl<'it, T: 'static + Send + Sync + Clone> ComponentIteratorMut<'it, T> {
 
-    pub fn new(it: slice::IterMut<'it, ComponentEntry<T>>) -> ComponentIterator<'it, T> {
+    pub fn new(it: slice::Iter<'it, ComponentEntry<T>>) -> ComponentIterator<'it, T> {
         ComponentIterator{
             st: it,
             current_index: 0
@@ -347,6 +352,38 @@ impl<'it, T: 'static + Send + Sync + Clone> ComponentIterator<'it, T> {
 
     pub fn index(&mut self) -> usize {
         self.current_index
+    }
+}
+
+pub struct ComponentIterator<'cs, T: 'cs + Send + Sync + Clone>{
+    st: slice::Iter<'cs, ComponentEntry<T>>,
+    current_index: usize
+}
+
+impl<'cs, T: Component> Iter for ComponentIterator<'cs, T> {
+    type Item = &'cs Box<T>;
+
+    fn next_element(&mut self, until: Option<usize>) -> Option<(Self::Item, usize)> {
+        let lim = until.unwrap_or(0);
+        loop{
+            let r;
+            let i;
+            if lim > self.current_index {
+                r = self.st.nth(lim - self.current_index);
+                i = lim;
+                self.current_index = lim + 1;
+            }else{
+                r = self.st.next();
+                i = self.current_index;
+                self.current_index += 1;
+            }
+
+            match r {
+                Some(ComponentEntry::Entry(ref v)) => {return Some((v, i))},
+                Some(_) => continue,
+                None => {return None}
+            }
+        }
     }
 }
 

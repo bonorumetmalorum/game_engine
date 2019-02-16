@@ -267,10 +267,35 @@ fn entity_iterator_test() {
 
 #[test]
 fn entity_iterator_live_only_test(){
-
+    let mut entity_manager = ECS::new();
+    let entity1 = entity_manager.allocate_new_entity();
+    let entity2= entity_manager.allocate_new_entity();
+    let entity3 =entity_manager.allocate_new_entity();
+    let res = entity_manager.deallocate_entity(entity2).expect("Error when: ");
+    let it = entity_manager.get_entity_iterator_live();
+    let mut wrapper = it.into_iterator_wrapper();
+    let result = wrapper.collect::<Vec<_>>();
+    assert_eq!(result.len(), 2);
 }
 #[test]
 fn entity_iterator_joint_test(){
-
+    let mut entity_manager = ECS::new();
+    let entity1 = entity_manager.allocate_new_entity();
+    let entity2= entity_manager.allocate_new_entity();
+    let entity3 =entity_manager.allocate_new_entity();
+    entity_manager.register_new_component::<StubComponentA>();
+    entity_manager.register_new_component::<StubComponentB>();
+    entity_manager.add_component(entity1, StubComponentA { counter: 0 });
+    entity_manager.add_component(entity2, StubComponentA { counter: 0 });
+    entity_manager.add_component(entity2, StubComponentB { counter: 100 });
+    entity_manager.add_component(entity3, StubComponentA { counter: 0 });
+    let res = entity_manager.deallocate_entity(entity2).expect("Error when: ");
+    let it = entity_manager.get_entity_iterator_live();
+    let mut ah = entity_manager.get_component_read_handle::<StubComponentA>();
+    let mut ita = ah.get_iterator();
+    let mut jointiter = it.join(ita);
+    let mut jiter = jointiter.into_iterator_wrapper();
+    let result = jiter.collect::<Vec<_>>();
+    assert_eq!(result.len(), 2);
 }
 
