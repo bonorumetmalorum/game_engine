@@ -33,7 +33,7 @@ impl<'a, 'b, S:Storage<'b>> ComponentReadHandle<'a, S>{
         self.r.deref().get(id)
     }
 
-    pub fn get_iterator(&'b mut self) -> S::ComponentIterator {
+    pub fn get_iterator(&'b self) -> S::ComponentIterator {
         self.r.deref().get_iter()
     }
 }
@@ -401,12 +401,30 @@ impl<H> Iterator for IteratorWrapper<H> where H: Iter{
     }
 }
 
+#[derive(Clone)]
 pub struct StubPosition{
     pub x: f32,
     pub y: f32,
 }
 
+impl Component for StubPosition{
+    type ComponentStorage = DenseComponentStorage<Self>;
+
+    fn update(&mut self) {
+        unimplemented!()
+    }
+}
+
+#[derive(Clone)]
 pub struct StubVelocity{
     dx: f32,
     dy: f32,
+}
+
+impl Component for StubVelocity{
+    type ComponentStorage = DenseComponentStorage<Self>;
+
+    fn update(&mut self) {
+        unimplemented!()
+    }
 }

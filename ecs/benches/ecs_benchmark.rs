@@ -55,7 +55,12 @@ fn ecs_fetch_component(c: &mut Criterion){
     let (entities, mut ecs) = build();
     ecs.register_new_component::<StubPosition>();
     let res2 = ecs.add_component(entities[99], StubPosition{x: 0.0, y: 0.0}).unwrap();
-    c.bench_function("ecs fetch component", move |b| b.iter(||{let it = ecs.iterator::<StubPosition>(); it.into_vec();}));
+    c.bench_function("ecs fetch component", move |b| b.iter(||{
+        let poshandle = ecs.get_component_read_handle::<StubPosition>();
+        let mut iterator = poshandle.get_iterator();
+        let mut iteratorwrapper = iterator.into_iterator_wrapper();
+        let result = iteratorwrapper.collect::<Vec<_>>();
+    }));
 }
 
 criterion_group!(benches, ecs_allocate_new_entities, ecs_deallocate_empty_entity, ecs_deallocate_entity_with_component, ecs_register_component, ecs_add_new_component, ecs_remove_component, ecs_fetch_component);
