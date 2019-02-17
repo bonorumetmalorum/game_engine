@@ -115,13 +115,13 @@ impl<'cs> ECS {
 //        self.storage.get::<T>().unwrap().write_handle().get_mut_iter()
 //    }
 
-    pub fn get_component_read_handle<T: Component>(&self) -> ComponentReadHandle<T::ComponentStorage> {
+    pub fn get_component_read_handle<T: Component>(&self) -> ComponentReadHandle<T::ComponentStorage> where T: 'static {
         let res = self.storage.get::<T>().unwrap();
         let strg = res.0.read().unwrap();
         ComponentReadHandle{ r: strg }
     }
 
-    pub fn get_component_write_handle<T: Component>(&self) -> ComponentWriteHandle<T::ComponentStorage> {
+    pub fn get_component_write_handle<T: Component>(&self) -> ComponentWriteHandle<T::ComponentStorage> where T: 'static{
         let res = self.storage.get::<T>().unwrap();
         let strg = res.0.write().unwrap();
         ComponentWriteHandle{ w: strg }

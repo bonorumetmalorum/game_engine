@@ -71,7 +71,7 @@ pub trait Storage<'st>: 'static + Send + Sync + Clone + Default {
     fn len(&self) -> usize;
 }
 
-pub trait GenericComponentStorage: Downcast{
+pub trait GenericComponentStorage: Send + Sync + Downcast{
     fn remove(&mut self, index: EntityIndex) -> Result<EntityIndex, &str>;
 }
 impl_downcast!(GenericComponentStorage);
