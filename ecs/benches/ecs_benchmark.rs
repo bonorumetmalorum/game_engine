@@ -77,24 +77,21 @@ pub fn setup_parallel() -> ECS{
     ecs
 }
 
-fn ecs_parallel_systems(c: &mut Criterion) {
+fn ecs_sequential_systems(c: &mut Criterion) {
     let mut ecs = setup_parallel();
-    {
+    c.bench_function("ecs sequential systems", move |b| b.iter( ||{
         let hr1 = ecs.get_component_read_handle::<R>();
         let hr2 = ecs.get_component_read_handle::<R>();
         let mut hw1 = ecs.get_component_write_handle::<W1>();
         let mut hw2 = ecs.get_component_write_handle::<W2>();
-        {
-            let mut itrr1 = hr1.get_iterator();
-            let mut itrr2 = hr2.get_iterator();
-            let itrw1 = hw1.get_mut_iter();
-            let itrw2 = hw2.get_mut_iter();
-            let handle1 = thread::spawn(move || systemW1(itrr1, itrw1));
-            let handle2 = thread::spawn( move || systemW2(itrr2, itrw2));
-            handle1.join().unwrap();
-            handle2.join().unwrap();
-        }
+        let mut itrr1 = hr1.get_iterator();
+        let mut itrr2 = hr2.get_iterator();
+        let itrw1 = hw1.get_mut_iter();
+        let itrw2 = hw2.get_mut_iter();
+        systemW1(itrr1, itrw1);
+        systemW2(itrr2, itrw2);
     }
+    ));
 }
 
 fn systemW1(mut readR: ComponentIterator<R>, mut rightW1: ComponentIteratorMut<W1>) {
@@ -151,5 +148,5 @@ impl Component for W2{
     }
 }
 
-criterion_group!(benches, ecs_allocate_new_entities, ecs_deallocate_empty_entity, ecs_deallocate_entity_with_component, ecs_register_component, ecs_add_new_component, ecs_remove_component, ecs_fetch_component);
+criterion_group!(benches, ecs_allocate_new_entities, ecs_deallocate_empty_entity, ecs_deallocate_entity_with_component, ecs_register_component, ecs_add_new_component, ecs_remove_component, ecs_fetch_component, ecs_sequential_systems);
 criterion_main!(benches);
