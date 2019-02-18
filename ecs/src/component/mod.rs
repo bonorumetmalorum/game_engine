@@ -417,8 +417,8 @@ impl Component for StubPosition{
 
 #[derive(Clone)]
 pub struct StubVelocity{
-    dx: f32,
-    dy: f32,
+    pub dx: f32,
+    pub dy: f32,
 }
 
 impl Component for StubVelocity{
