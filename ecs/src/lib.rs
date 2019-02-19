@@ -11,22 +11,11 @@ use component::ComponentStorage;
 use entity::management::EntityAllocator;
 use entity::EntityIndex;
 use std::any::Any;
-use component::ComponentIterator;
-use component::Storage;
-use component::DenseComponentStorage;
-use component::ComponentEntry;
-use std::ops::DerefMut;
 use component::Component;
-use std::sync::RwLockWriteGuard;
-use std::sync::RwLockReadGuard;
 use component::ComponentReadHandle;
 use component::ComponentWriteHandle;
 use entity::management::EntityIterator;
 use entity::management::EntityIteratorLive;
-
-pub struct ComponentHandle<'a, T: Storage<'a>>{
-    data: &'a mut T
-}
 
 //generational data structure
 pub struct ECS {
@@ -128,8 +117,8 @@ impl<'cs> ECS {
     }
 
     pub fn get_mut<T: Component>(&mut self) -> &mut T::ComponentStorage{
-        let mut res = self.storage.get_mut::<T>().unwrap();
-        let mut component = res.0.get_mut().unwrap();
+        let res = self.storage.get_mut::<T>().unwrap();
+        let component = res.0.get_mut().unwrap();
         component
     }
 
@@ -139,14 +128,6 @@ impl<'cs> ECS {
 
     pub fn get_entity_iterator(&self) -> EntityIterator {
         self.entity_list.get_iter()
-    }
-
-    pub fn set_entity_dead(&mut self, id: EntityIndex) -> bool {
-        self.entity_list.set_dead(id)
-    }
-
-    pub fn set_entity_live(&mut self, id: EntityIndex) -> bool {
-        self.entity_list.set_live(id)
     }
 
     /*

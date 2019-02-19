@@ -190,7 +190,7 @@ impl<'st> ComponentStorage {
     pub fn add_component<T: Component>(&mut self, component: T, id: EntityIndex) -> Result<EntityIndex, &str> {
         if let Ok(storage) = self.get_mut::<T>(){
             let mut store = storage.0.get_mut().unwrap();
-            store.insert(id, component);
+            store.insert(id, component).expect("unable to insert component");
             Ok(id)
         }else{
             Err("component is not registered")
@@ -203,7 +203,7 @@ impl<'st> ComponentStorage {
             if id.0 >= store.len() {
                 Err("entity does not have component")
             }else{
-                store.remove(id);
+                store.remove(id).expect("unable to remove component");
                 Ok(id)
             }
         }else{
@@ -213,8 +213,8 @@ impl<'st> ComponentStorage {
 
     pub fn clear_entity(&mut self, id: EntityIndex) -> Result<(), &str> {
         let mut status = Ok(());
-        for (t, cs) in self.0.borrow_mut() {
-            if let Ok(res) = cs.remove(id) {
+        for (_, cs) in self.0.borrow_mut() {
+            if let Ok(_) = cs.remove(id) {
                 continue;
             }else{
                 status = Err("Entity does not exist");
@@ -269,7 +269,7 @@ pub trait Iter{
     type Item;
 
     fn next_element(&mut self, until: Option<usize>) -> Option<(Self::Item, usize)>;
-    fn join<H: Iter>(mut self, other: H) -> ComponentIteratorJoin<Self, H> where Self: Sized{
+    fn join<H: Iter>(self, other: H) -> ComponentIteratorJoin<Self, H> where Self: Sized{
         ComponentIteratorJoin(self, other)
     }
     fn into_iterator_wrapper(self) -> IteratorWrapper<Self> where Self: Sized {
@@ -317,7 +317,7 @@ impl<'it, T: Component> Iter for ComponentIteratorMut<'it, T>{
     type Item = &'it mut Box<T>;
 
     fn next_element(&mut self, until: Option<usize>) -> Option<(Self::Item, usize)> {
-        let mut lim = until.unwrap_or(0);
+        let lim = until.unwrap_or(0);
         loop{
             let r;
             let i;

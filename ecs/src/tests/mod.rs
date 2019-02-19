@@ -1,11 +1,8 @@
 use component::Component;
 use ECS;
-use component::ComponentIterator;
 use component::Iter;
-use component::ComponentEntry::*;
 use component::Storage;
 use component::DenseComponentStorage;
-use std::clone::Clone;
 
 #[derive(Clone)]
 struct StubComponentA {
@@ -77,7 +74,7 @@ fn remove_entity_from_ecs(){
     let _ok = entity_manager.register_new_component::<StubComponentA>().is_ok();
     let index = entity_manager.add_component(index, StubComponentA {counter:0}).unwrap();
     let result = entity_manager.deallocate_entity(index);
-    assert!(result.is_ok(), true);
+    assert_eq!(result.is_ok(), true);
 }
 
 #[test]
@@ -95,10 +92,10 @@ fn get_component_iterator(){
     entity_manager.allocate_new_entity();
     entity_manager.allocate_new_entity();
     entity_manager.allocate_new_entity();
-    entity_manager.register_new_component::<StubComponentA>();
-    entity_manager.add_component((0,0), StubComponentA{ counter: 0 });
-    entity_manager.add_component((1,0), StubComponentA{ counter: 1 });
-    entity_manager.add_component((2,0), StubComponentA{ counter: 2 });
+    entity_manager.register_new_component::<StubComponentA>().expect("unable to register new component");
+    entity_manager.add_component((0,0), StubComponentA{ counter: 0 }).expect("not registered");
+    entity_manager.add_component((1,0), StubComponentA{ counter: 1 }).expect("not registered");
+    entity_manager.add_component((2,0), StubComponentA{ counter: 2 }).expect("not registered");
     let mut handle = entity_manager.get_component_write_handle::<StubComponentA>();
     let mut it = handle.get_mut_iter();
     assert_eq!(it.index(), 0)
@@ -110,12 +107,12 @@ fn get_component_test(){
     entity_manager.allocate_new_entity();
     entity_manager.allocate_new_entity();
     entity_manager.allocate_new_entity();
-    entity_manager.register_new_component::<StubComponentA>();
-    entity_manager.add_component((0,0), StubComponentA{ counter: 0 });
-    entity_manager.add_component((1,0), StubComponentA{ counter: 1 });
-    entity_manager.add_component((2,0), StubComponentA{ counter: 2 });
+    entity_manager.register_new_component::<StubComponentA>().expect("unable to register new component");
+    entity_manager.add_component((0,0), StubComponentA{ counter: 0 }).expect("not registered");
+    entity_manager.add_component((1,0), StubComponentA{ counter: 1 }).expect("not registered");
+    entity_manager.add_component((2,0), StubComponentA{ counter: 2 }).expect("not registered");
     {
-        let mut comp = entity_manager.get_mut::<StubComponentA>();
+        let comp = entity_manager.get_mut::<StubComponentA>();
         let mut it = comp.get_mut_iter();
         loop{
             if let Some(x) = it.next_element(None) {
@@ -126,8 +123,8 @@ fn get_component_test(){
         }
     }
     let mut handle = entity_manager.get_component_write_handle::<StubComponentA>();
-    let mut it = handle.get_mut_iter();
-    let mut iw = it.into_iterator_wrapper();
+    let it = handle.get_mut_iter();
+    let iw = it.into_iterator_wrapper();
     let res: Vec<&mut Box<StubComponentA>> = iw.collect();
     assert_eq!(res[0].counter, 1);
     assert_eq!(res[1].counter, 2);
@@ -140,16 +137,16 @@ fn iterator_test_singular(){
     entity_manager.allocate_new_entity();
     entity_manager.allocate_new_entity();
     entity_manager.allocate_new_entity();
-    entity_manager.register_new_component::<StubComponentA>();
-    entity_manager.register_new_component::<StubComponentB>();
-    entity_manager.add_component((0,0), StubComponentA{ counter: 0 });
-    entity_manager.add_component((2,0), StubComponentA{counter: 0});
-    entity_manager.add_component((1,0), StubComponentA{counter: 0});
-    entity_manager.add_component((1,0), StubComponentB{counter: 100});
+    entity_manager.register_new_component::<StubComponentA>().expect("unable to register new component");
+    entity_manager.register_new_component::<StubComponentB>().expect("unable to register new component");
+    entity_manager.add_component((0,0), StubComponentA{ counter: 0 }).expect("not registered");
+    entity_manager.add_component((2,0), StubComponentA{counter: 0}).expect("not registered");
+    entity_manager.add_component((1,0), StubComponentA{counter: 0}).expect("not registered");
+    entity_manager.add_component((1,0), StubComponentB{counter: 100}).expect("not registered");
     let mut handle = entity_manager.get_component_write_handle::<StubComponentB>();
     let mut itb = handle.get_mut_iter();
-    let mut result = itb.next_element(None);
-    let mut result1 = itb.next_element(None);
+    let result = itb.next_element(None);
+    let result1 = itb.next_element(None);
     assert_eq!(result.is_none(), false);
     assert_eq!(result.unwrap().0.counter, 100);
     assert_eq!(result1.is_none(), true);
@@ -161,20 +158,20 @@ fn iterator_join_test(){
     entity_manager.allocate_new_entity();
     entity_manager.allocate_new_entity();
     entity_manager.allocate_new_entity();
-    entity_manager.register_new_component::<StubComponentA>();
-    entity_manager.register_new_component::<StubComponentB>();
-    entity_manager.add_component((0,0), StubComponentA{ counter: 0 });
-    entity_manager.add_component((1,0), StubComponentA{counter: 0});
-    entity_manager.add_component((1,0), StubComponentB{counter: 100});
-    entity_manager.add_component((2,0), StubComponentA{counter: 0});
+    entity_manager.register_new_component::<StubComponentA>().expect("unable to register new component");
+    entity_manager.register_new_component::<StubComponentB>().expect("unable to register new component");
+    entity_manager.add_component((0,0), StubComponentA{ counter: 0 }).expect("not registered");
+    entity_manager.add_component((1,0), StubComponentA{counter: 0}).expect("not registered");
+    entity_manager.add_component((1,0), StubComponentB{counter: 100}).expect("not registered");
+    entity_manager.add_component((2,0), StubComponentA{counter: 0}).expect("not registered");
     let mut compha = entity_manager.get_component_write_handle::<StubComponentA>();
     let mut comphb = entity_manager.get_component_write_handle::<StubComponentB>();
     let ita = compha.get_mut_iter();
     let itb = comphb.get_mut_iter();
-    let mut joint = ita.join(itb);
+    let joint = ita.join(itb);
     let mut jit = joint.into_iterator_wrapper();
-    let mut res = jit.next();
-    let mut unwrapped = res.unwrap();
+    let res = jit.next();
+    let unwrapped = res.unwrap();
     assert_eq!((unwrapped.0).counter, 0);
     assert_eq!((unwrapped.1).counter, 100);
 }
@@ -186,15 +183,15 @@ fn iterator_vec_test(){
     entity_manager.allocate_new_entity();
     entity_manager.allocate_new_entity();
     entity_manager.allocate_new_entity();
-    entity_manager.register_new_component::<StubComponentA>();
-    entity_manager.register_new_component::<StubComponentB>();
-    entity_manager.add_component((0,0), StubComponentA{ counter: 0 });
-    entity_manager.add_component((1,0), StubComponentA{counter: 0});
-    entity_manager.add_component((1,0), StubComponentB{counter: 100});
-    entity_manager.add_component((2,0), StubComponentA{counter: 0});
+    entity_manager.register_new_component::<StubComponentA>().expect("unable to register new component");
+    entity_manager.register_new_component::<StubComponentB>().expect("unable to register new component");
+    entity_manager.add_component((0,0), StubComponentA{ counter: 0 }).expect("not registered");
+    entity_manager.add_component((1,0), StubComponentA{counter: 0}).expect("not registered");
+    entity_manager.add_component((1,0), StubComponentB{counter: 100}).expect("not registered");
+    entity_manager.add_component((2,0), StubComponentA{counter: 0}).expect("not registered");
     let mut compha = entity_manager.get_component_write_handle::<StubComponentA>();
     let ita = compha.get_mut_iter();
-    let mut jit = ita.into_iterator_wrapper();
+    let jit = ita.into_iterator_wrapper();
     let result: Vec<&mut Box<StubComponentA>> = jit.collect();
     assert_eq!(result.len(), 3);
 }
@@ -205,20 +202,20 @@ fn iterator_joint_vec_test(){
     entity_manager.allocate_new_entity();
     entity_manager.allocate_new_entity();
     entity_manager.allocate_new_entity();
-    entity_manager.register_new_component::<StubComponentA>();
-    entity_manager.register_new_component::<StubComponentB>();
-    entity_manager.add_component((0,0), StubComponentA{ counter: 0 });
-    entity_manager.add_component((0,0), StubComponentB{ counter: 0 });
-    entity_manager.add_component((1,0), StubComponentA{counter: 0});
-    entity_manager.add_component((1,0), StubComponentB{counter: 100});
-    entity_manager.add_component((2,0), StubComponentA{counter: 0});
-    entity_manager.add_component((2,0), StubComponentB{counter: 0});
+    entity_manager.register_new_component::<StubComponentA>().expect("unable to register new component");
+    entity_manager.register_new_component::<StubComponentB>().expect("unable to register new component");
+    entity_manager.add_component((0,0), StubComponentA{ counter: 0 }).expect("not registered");
+    entity_manager.add_component((0,0), StubComponentB{ counter: 0 }).expect("not registered");
+    entity_manager.add_component((1,0), StubComponentA{counter: 0}).expect("not registered");
+    entity_manager.add_component((1,0), StubComponentB{counter: 100}).expect("not registered");
+    entity_manager.add_component((2,0), StubComponentA{counter: 0}).expect("not registered");
+    entity_manager.add_component((2,0), StubComponentB{counter: 0}).expect("not registered");
     let mut compha = entity_manager.get_component_write_handle::<StubComponentA>();
     let mut comphb = entity_manager.get_component_write_handle::<StubComponentB>();
     let ita = compha.get_mut_iter();
     let itb = comphb.get_mut_iter();
-    let mut joint = ita.join(itb);
-    let mut jit = joint.into_iterator_wrapper();
+    let joint = ita.join(itb);
+    let jit = joint.into_iterator_wrapper();
     let result: Vec<(&mut Box<StubComponentA>, &mut Box<StubComponentB>)> = jit.collect();
     assert_eq!(result.len(), 3);
 }
@@ -230,18 +227,18 @@ fn iterator_joint_uneven_vec_test(){
     entity_manager.allocate_new_entity();
     entity_manager.allocate_new_entity();
     entity_manager.allocate_new_entity();
-    entity_manager.register_new_component::<StubComponentA>();
-    entity_manager.register_new_component::<StubComponentB>();
-    entity_manager.add_component((0,0), StubComponentA{ counter: 0 });
-    entity_manager.add_component((1,0), StubComponentA{counter: 0});
-    entity_manager.add_component((1,0), StubComponentB{counter: 100});
-    entity_manager.add_component((2,0), StubComponentA{counter: 0});
+    entity_manager.register_new_component::<StubComponentA>().expect("unable to register new component");
+    entity_manager.register_new_component::<StubComponentB>().expect("unable to register new component");
+    entity_manager.add_component((0,0), StubComponentA{ counter: 0 }).expect("not registered");
+    entity_manager.add_component((1,0), StubComponentA{counter: 0}).expect("not registered");
+    entity_manager.add_component((1,0), StubComponentB{counter: 100}).expect("not registered");
+    entity_manager.add_component((2,0), StubComponentA{counter: 0}).expect("not registered");
     let mut compha = entity_manager.get_component_write_handle::<StubComponentA>();
     let mut comphb = entity_manager.get_component_write_handle::<StubComponentB>();
     let ita = compha.get_mut_iter();
     let itb = comphb.get_mut_iter();
-    let mut joint = ita.join(itb);
-    let mut jit = joint.into_iterator_wrapper();
+    let joint = ita.join(itb);
+    let jit = joint.into_iterator_wrapper();
     let result = jit.collect::<Vec<_>>();
     assert_eq!(result.len(), 1);
 }
@@ -252,28 +249,30 @@ fn entity_iterator_test() {
     entity_manager.allocate_new_entity();
     entity_manager.allocate_new_entity();
     entity_manager.allocate_new_entity();
-    entity_manager.register_new_component::<StubComponentA>();
-    entity_manager.register_new_component::<StubComponentB>();
-    entity_manager.add_component((0, 0), StubComponentA { counter: 0 });
-    entity_manager.add_component((1, 0), StubComponentA { counter: 0 });
-    entity_manager.add_component((1, 0), StubComponentB { counter: 100 });
-    entity_manager.add_component((2, 0), StubComponentA { counter: 0 });
-    let mut ent_it = entity_manager.get_entity_iterator_live();
+    entity_manager.register_new_component::<StubComponentA>().expect("unable to register new component");
+    entity_manager.register_new_component::<StubComponentB>().expect("unable to register new component");
+    entity_manager.add_component((0, 0), StubComponentA { counter: 0 }).expect("not registered");
+    entity_manager.add_component((1, 0), StubComponentA { counter: 0 }).expect("not registered");
+    entity_manager.add_component((1, 0), StubComponentB { counter: 100 }).expect("not registered");
+    entity_manager.add_component((2, 0), StubComponentA { counter: 0 }).expect("not registered");
+    let ent_it = entity_manager.get_entity_iterator_live();
     let mut compha = entity_manager.get_component_write_handle::<StubComponentA>();
     let ita = compha.get_mut_iter();
-    let mut jointea = ent_it.join(ita);
-
+    let jointea = ent_it.join(ita);
+    let jointwrapper = jointea.into_iterator_wrapper();
+    let collect = jointwrapper.collect::<Vec<_>>();
+    assert_eq!(collect.len(), 3);
 }
 
 #[test]
 fn entity_iterator_live_only_test(){
     let mut entity_manager = ECS::new();
-    let entity1 = entity_manager.allocate_new_entity();
-    let entity2= entity_manager.allocate_new_entity();
-    let entity3 =entity_manager.allocate_new_entity();
-    let res = entity_manager.deallocate_entity(entity2).expect("Error when: ");
+    let _entity1 = entity_manager.allocate_new_entity();
+    let entity2 = entity_manager.allocate_new_entity();
+    let _entity3 = entity_manager.allocate_new_entity();
+    let _res = entity_manager.deallocate_entity(entity2).expect("Error when: ");
     let it = entity_manager.get_entity_iterator_live();
-    let mut wrapper = it.into_iterator_wrapper();
+    let wrapper = it.into_iterator_wrapper();
     let result = wrapper.collect::<Vec<_>>();
     assert_eq!(result.len(), 2);
 }
@@ -283,18 +282,18 @@ fn entity_iterator_joint_test(){
     let entity1 = entity_manager.allocate_new_entity();
     let entity2= entity_manager.allocate_new_entity();
     let entity3 =entity_manager.allocate_new_entity();
-    entity_manager.register_new_component::<StubComponentA>();
-    entity_manager.register_new_component::<StubComponentB>();
-    entity_manager.add_component(entity1, StubComponentA { counter: 0 });
-    entity_manager.add_component(entity2, StubComponentA { counter: 0 });
-    entity_manager.add_component(entity2, StubComponentB { counter: 100 });
-    entity_manager.add_component(entity3, StubComponentA { counter: 0 });
-    let res = entity_manager.deallocate_entity(entity2).expect("Error when: ");
+    entity_manager.register_new_component::<StubComponentA>().expect("unable to register new component");
+    entity_manager.register_new_component::<StubComponentB>().expect("unable to register new component");
+    entity_manager.add_component(entity1, StubComponentA { counter: 0 }).expect("not registered");
+    entity_manager.add_component(entity2, StubComponentA { counter: 0 }).expect("not registered");
+    entity_manager.add_component(entity2, StubComponentB { counter: 100 }).expect("not registered");
+    entity_manager.add_component(entity3, StubComponentA { counter: 0 }).expect("not registered");
+    let _res = entity_manager.deallocate_entity(entity2).expect("Error when: ");
     let it = entity_manager.get_entity_iterator_live();
-    let mut ah = entity_manager.get_component_read_handle::<StubComponentA>();
-    let mut ita = ah.get_iterator();
-    let mut jointiter = it.join(ita);
-    let mut jiter = jointiter.into_iterator_wrapper();
+    let ah = entity_manager.get_component_read_handle::<StubComponentA>();
+    let ita = ah.get_iterator();
+    let jointiter = it.join(ita);
+    let jiter = jointiter.into_iterator_wrapper();
     let result = jiter.collect::<Vec<_>>();
     assert_eq!(result.len(), 2);
 }

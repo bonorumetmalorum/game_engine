@@ -62,14 +62,6 @@ impl EntityAllocator {
             current_index: 0
         }
     }
-
-    pub fn set_live(&mut self, id: EntityIndex) -> bool {
-        unimplemented!()
-    }
-
-    pub fn set_dead(&mut self, id: EntityIndex) -> bool {
-        unimplemented!()
-    }
 }
 
 pub struct EntityIteratorLive<'cs>{
@@ -127,7 +119,7 @@ impl<'cs> Iter for EntityIterator<'cs> {
             }
 
             match r {
-                Some(entry) => {return Some((entry, self.current_index))}
+                Some(entry) => {return Some((entry, i))}
                 None => return None
             }
         }
