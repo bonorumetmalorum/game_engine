@@ -1,0 +1,8 @@
+[package]
+name = "papi"
+version = "0.1.0"
+authors = ["Govind Venkatesh <venkateshgovind1@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+libc = "0.2.48"
