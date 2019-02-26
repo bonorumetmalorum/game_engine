@@ -222,6 +222,11 @@ version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
+name = "gnuplot"
+version = "0.0.29"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
 name = "itertools"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -284,6 +289,8 @@ dependencies = [
 name = "papi"
 version = "0.3.0"
 dependencies = [
+ "ecs 0.1.0",
+ "gnuplot 0.0.29 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.1.12 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.3.23 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -559,6 +566,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum downcast-rs 1.0.3 (registry+https://github.com/rust-lang/crates.io-index)" = "18df8ce4470c189d18aa926022da57544f31e154631eb4cfe796aea97051fe6c"
 "checksum either 1.5.0 (registry+https://github.com/rust-lang/crates.io-index)" = "3be565ca5c557d7f59e7cfcf1844f9e3033650c929c6566f511e8005f205c1d0"
 "checksum fuchsia-cprng 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "a06f77d526c1a601b7c4cdd98f54b5eaabffc14d5f2f0296febdc7f357c6d3ba"
+"checksum gnuplot 0.0.29 (registry+https://github.com/rust-lang/crates.io-index)" = "a60db40d5189ff09a8a0f84640955cb52d456915fd9865ec6da74cd1cc440aef"
 "checksum itertools 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)" = "5b8467d9c1cebe26feb08c640139247fac215782d35371ade9a2136ed6085358"
 "checksum itoa 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)" = "1306f3464951f30e30d12373d31c79fbd52d236e5e896fd92f96ec7babbbe60b"
 "checksum lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "a374c89b9db55895453a74c1e38861d9deec0b01b405a82516e9d5de4820dea1"

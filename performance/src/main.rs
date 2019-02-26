@@ -1,5 +1,7 @@
 extern crate papi;
 extern crate ecs;
+extern crate gnuplot;
+
 use ecs::*;
 use ecs::entity::EntityIndex;
 use ecs::component::Component;
@@ -7,6 +9,20 @@ use ecs::component::DenseComponentStorage;
 use ecs::component::ComponentIterator;
 use ecs::component::ComponentIteratorMut;
 use ecs::component::Iter;
+use std::fs::File;
+use std::io::Write;
+use std::hash::BuildHasherDefault;
+use std::fs::create_dir;
+use std::process::Command;
+use gnuplot::Figure;
+use gnuplot::Major;
+use gnuplot::Color;
+use gnuplot::BorderColor;
+use gnuplot::Fix;
+use gnuplot::AxesCommon;
+use gnuplot::Auto;
+
+
 
 const STANDARD: usize = 10000;
 
@@ -87,6 +103,7 @@ fn system_w2(read_r: ComponentIterator<R>, write_w2: ComponentIteratorMut<W2>){
 }
 
 fn main() {
+    create_dir("./data/");
 
     {
         //setup 10000 empty
@@ -100,6 +117,25 @@ fn main() {
 
         println!("setup 10000 empty entities {} L1 misses, {} L2 misses",
                  stop[0] - start[0], stop[1] - start[1]);
+
+        let result_arr = stop.iter().zip(start.iter()).map(|(x, y)| (x - y) as f32).collect::<Vec<f32>>();
+        let mut fg = Figure::new();
+        fg.set_terminal("pngcairo", "./data/setup_10000_empty_entities.png");
+
+        fg.axes2d()
+            .boxes(&[1., 2.], &result_arr, &[Color("gray"), BorderColor("black")])
+            .set_title("setup 10000 empty entities", &[])
+            .set_x_ticks_custom(
+                vec![
+                    Major(1. as f32, Fix("L1 Data Cache Miss".into())),
+                    Major(2. as f32, Fix("L2 Data Cache Miss ".into())),
+                ],
+                &[],
+                &[],
+            )
+            .set_y_range(Fix(0.0), Auto);
+        fg.show();
+
     }
 
     {
@@ -114,6 +150,25 @@ fn main() {
 
         println!("allocated 10000 entities with components with {} L1 misses, {} L2 misses",
                  stop[0] - start[0], stop[1] - start[1]);
+        let data = format!("0 L1 {}\n1 L2 {}", stop[0] - start[0], stop[1] - start[1]);
+
+        let result_arr = stop.iter().zip(start.iter()).map(|(x, y)| (x - y) as f32).collect::<Vec<f32>>();
+        let mut fg = Figure::new();
+        fg.set_terminal("pngcairo", "./data/setup_10000_entities_with_components.png");
+
+        fg.axes2d()
+            .boxes(&[1., 2.], &result_arr, &[Color("gray"), BorderColor("black")])
+            .set_title("setup 10000 entities with components", &[])
+            .set_x_ticks_custom(
+                vec![
+                    Major(1. as f32, Fix("L1 Data Cache Miss".into())),
+                    Major(2. as f32, Fix("L2 Data Cache Miss ".into())),
+                ],
+                &[],
+                &[],
+            )
+            .set_y_range(Fix(0.0), Auto);
+        fg.show();
     }
 
     {
@@ -139,6 +194,23 @@ fn main() {
 
         println!("updated components sequentially with {} L1 misses, {} L2 misses",
                  stop[0] - start[0], stop[1] - start[1]);
+
+        let result_arr = stop.iter().zip(start.iter()).map(|(x, y)| (x - y) as f32).collect::<Vec<f32>>();
+        let mut fg = Figure::new();
+        fg.set_terminal("pngcairo", "./data/update_10000_entities_with_components.png");
+        fg.axes2d()
+            .boxes(&[1., 2.], &result_arr, &[Color("gray"), BorderColor("black")])
+            .set_title("update 10000 entities with components", &[])
+            .set_x_ticks_custom(
+                vec![
+                    Major(1. as f32, Fix("L1 Data Cache Miss".into())),
+                    Major(2. as f32, Fix("L2 Data Cache Miss ".into())),
+                ],
+                &[],
+                &[],
+            )
+            .set_y_range(Fix(0.0), Auto);
+        fg.show();
     }
 }
 
