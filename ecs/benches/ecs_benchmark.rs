@@ -1,10 +1,12 @@
 #[macro_use]
 extern crate criterion;
 extern crate ecs;
+extern crate crossbeam;
 use ecs::entity::*;
 use ecs::component::*;
 use criterion::Criterion;
 use ecs::ECS;
+use crossbeam::thread;
 
 const NUM_POSITION_ONLY: usize = 9000;
 const NUM_POSITION_AND_VELOCITY: usize = 1000;
@@ -112,31 +114,29 @@ fn ecs_sequential_systems(c: &mut Criterion) {
 }
 
 //parallel benchmark currently not working due to issues with lifetimes
-//fn ecs_parallel_systems(c: &mut Criterion){
-//    c.bench_function("ecs parallel systems", move |b| {
-//        b.iter_with_large_setup(|| setup_parallel(), |ecs: ECS|{
-//            let hr1 = ecs.get_component_read_handle::<R>();
-//            let mut hw1 = ecs.get_component_write_handle::<W1>();
-//
-//            let hr2 = ecs.get_component_read_handle::<R>();
-//            let mut hw2 = ecs.get_component_write_handle::<W2>();
-//
-//            let mut handle1 = thread::spawn(move ||{
-//                let mut itrr1 = hr1.get_iterator();
-//                let itrw1 = hw1.get_mut_iter();
-//                systemW1(itrr1, itrw1);
-//            });
-//
-//            let mut handle2 = thread::spawn( move ||{
-//                let mut itrr2 = hr2.get_iterator();
-//                let itrw2 = hw2.get_mut_iter();
-//                systemW2(itrr2, itrw2);
-//            });
-//            handle1.join();
-//            handle2.join();
-//        })
-//    });
-//}
+fn ecs_parallel_systems(c: &mut Criterion){
+    c.bench_function("ecs parallel systems", move |b| {
+        b.iter_with_large_setup(|| setup_parallel(), |ecs: ECS|{
+            let hr1 = ecs.get_component_read_handle::<R>();
+            let mut hw1 = ecs.get_component_write_handle::<W1>();
+
+            let hr2 = ecs.get_component_read_handle::<R>();
+            let mut hw2 = ecs.get_component_write_handle::<W2>();
+
+            let mut handle1 = thread::scope(move |_|{
+                let mut itrr1 = hr1.get_iterator();
+                let itrw1 = hw1.get_mut_iter();
+                system_w1(itrr1, itrw1);
+            });
+
+            let mut handle2 = thread::scope( move |_|{
+                let mut itrr2 = hr2.get_iterator();
+                let itrw2 = hw2.get_mut_iter();
+                system_w2(itrr2, itrw2);
+            });
+        })
+    });
+}
 
 
 
@@ -203,5 +203,5 @@ impl Component for W2{
     }
 }
 
-criterion_group!(benches, ecs_allocate_new_entities_pos_vel, ecs_deallocate_empty_entity, ecs_deallocate_entity_with_component, ecs_register_component, ecs_add_new_component, ecs_remove_component, ecs_fetch_component, ecs_pos_vel_update, ecs_sequential_systems);
+criterion_group!(benches, ecs_allocate_new_entities_pos_vel, ecs_deallocate_empty_entity, ecs_deallocate_entity_with_component, ecs_register_component, ecs_add_new_component, ecs_remove_component, ecs_fetch_component, ecs_pos_vel_update, ecs_sequential_systems, ecs_parallel_systems);
 criterion_main!(benches);
