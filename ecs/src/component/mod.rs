@@ -10,6 +10,9 @@ use std::collections::HashMap;
 use core::borrow::BorrowMut;
 use component::handles::ComponentWriteHandle;
 use component::handles::ComponentReadHandle;
+use std::cell::RefCell;
+use component::handles::SyncWriteHandle;
+use component::handles::SyncReadHandle;
 
 pub mod dense_component_storage;
 pub mod storage;
@@ -41,18 +44,16 @@ pub trait GenericComponentStorage: Send + Sync + Downcast{
 }
 impl_downcast!(GenericComponentStorage);
 
-pub struct ComponentStore<T>(pub RwLock<T>);
+pub struct ComponentStore<T>(pub RefCell<T>);
 
 //switch RwLockWriteGuard to ComponentWrite/Read Handle.
 impl<'st, T: Storage<'st>> ComponentStore<T> {
-    pub fn write_handle(&self) -> ComponentWriteHandle<T>{
-        let result = self.0.write().unwrap();
-        ComponentWriteHandle{ w: result }
+    pub fn write_handle(&self) -> SyncWriteHandle<T>{
+        SyncWriteHandle(&self.0)
     }
 
     pub fn read_handle(&self) -> ComponentReadHandle<T>{
-        let result = self.0.read().unwrap();
-        ComponentReadHandle{ r: result }
+        SyncReadHandle(&self.0)
     }
 
     pub fn get_mut_handle(&mut self) -> &mut T {
