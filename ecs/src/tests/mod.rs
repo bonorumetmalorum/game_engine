@@ -1,8 +1,8 @@
 use component::Component;
+use component::dense_component_storage::DenseComponentStorage;
 use ECS;
-use component::Iter;
-use component::Storage;
-use component::DenseComponentStorage;
+use component::storage::Storage;
+use component::iter::Iter;
 
 #[derive(Clone)]
 struct StubComponentA {

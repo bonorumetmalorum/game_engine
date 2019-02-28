@@ -5,10 +5,6 @@ extern crate gnuplot;
 use ecs::*;
 use ecs::entity::EntityIndex;
 use ecs::component::Component;
-use ecs::component::DenseComponentStorage;
-use ecs::component::ComponentIterator;
-use ecs::component::ComponentIteratorMut;
-use ecs::component::Iter;
 use std::fs::File;
 use std::io::Write;
 use std::hash::BuildHasherDefault;
@@ -21,7 +17,10 @@ use gnuplot::BorderColor;
 use gnuplot::Fix;
 use gnuplot::AxesCommon;
 use gnuplot::Auto;
-
+use ecs::component::dense_component_storage::DenseComponentStorage;
+use ecs::component::dense_component_storage::DenseComponentIterator;
+use ecs::component::dense_component_storage::DenseComponentIteratorMut;
+use ecs::component::iter::Iter;
 
 
 const STANDARD: usize = 10000;
@@ -86,7 +85,7 @@ fn setup() -> ECS {
     ecs
 }
 
-fn system_w1(read_r: ComponentIterator<R>, write_w1: ComponentIteratorMut<W1>) {
+fn system_w1(read_r: DenseComponentIterator<R>, write_w1: DenseComponentIteratorMut<W1>) {
     let joint = read_r.join(write_w1);
     let iterator = joint.into_iterator_wrapper();
     for (r, w1) in iterator {
@@ -94,7 +93,7 @@ fn system_w1(read_r: ComponentIterator<R>, write_w1: ComponentIteratorMut<W1>) {
     }
 }
 
-fn system_w2(read_r: ComponentIterator<R>, write_w2: ComponentIteratorMut<W2>){
+fn system_w2(read_r: DenseComponentIterator<R>, write_w2: DenseComponentIteratorMut<W2>){
     let joint = read_r.join(write_w2);
     let iterator = joint.into_iterator_wrapper();
     for (r, w2) in iterator {

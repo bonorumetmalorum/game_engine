@@ -2,11 +2,18 @@
 extern crate criterion;
 extern crate ecs;
 extern crate crossbeam;
-use ecs::entity::*;
-use ecs::component::*;
-use criterion::Criterion;
+
+use ecs::entity::EntityIndex;
 use ecs::ECS;
-use crossbeam::thread;
+use ecs::component::StubVelocity;
+use ecs::component::StubPosition;
+use criterion::Criterion;
+use ecs::component::iter::Iter;
+use ecs::component::Component;
+use ecs::component::dense_component_storage::DenseComponentStorage;
+use ecs::component::dense_component_storage::DenseComponentIteratorMut;
+use ecs::component::dense_component_storage::DenseComponentIterator;
+
 
 const NUM_POSITION_ONLY: usize = 9000;
 const NUM_POSITION_AND_VELOCITY: usize = 1000;
@@ -113,34 +120,34 @@ fn ecs_sequential_systems(c: &mut Criterion) {
     ));
 }
 
-//parallel benchmark currently not working due to issues with lifetimes
-fn ecs_parallel_systems(c: &mut Criterion){
-    c.bench_function("ecs parallel systems", move |b| {
-        b.iter_with_large_setup(|| setup_parallel(), |ecs: ECS|{
-            let hr1 = ecs.get_component_read_handle::<R>();
-            let mut hw1 = ecs.get_component_write_handle::<W1>();
+////parallel benchmark currently not working due to issues with lifetimes
+//fn ecs_parallel_systems(c: &mut Criterion){
+//    c.bench_function("ecs parallel systems", move |b| {
+//        b.iter_with_large_setup(|| setup_parallel(), |ecs: ECS|{
+//            let hr1 = ecs.get_component_read_handle::<R>();
+//            let mut hw1 = ecs.get_component_write_handle::<W1>();
+//
+//            let hr2 = ecs.get_component_read_handle::<R>();
+//            let mut hw2 = ecs.get_component_write_handle::<W2>();
+//
+//            let mut handle1 = thread::scope(move |_|{
+//                let mut itrr1 = hr1.get_iterator();
+//                let itrw1 = hw1.get_mut_iter();
+//                system_w1(itrr1, itrw1);
+//            });
+//
+//            let mut handle2 = thread::scope( move |_|{
+//                let mut itrr2 = hr2.get_iterator();
+//                let itrw2 = hw2.get_mut_iter();
+//                system_w2(itrr2, itrw2);
+//            });
+//        })
+//    });
+//}
 
-            let hr2 = ecs.get_component_read_handle::<R>();
-            let mut hw2 = ecs.get_component_write_handle::<W2>();
-
-            let mut handle1 = thread::scope(move |_|{
-                let mut itrr1 = hr1.get_iterator();
-                let itrw1 = hw1.get_mut_iter();
-                system_w1(itrr1, itrw1);
-            });
-
-            let mut handle2 = thread::scope( move |_|{
-                let mut itrr2 = hr2.get_iterator();
-                let itrw2 = hw2.get_mut_iter();
-                system_w2(itrr2, itrw2);
-            });
-        })
-    });
-}
 
 
-
-fn system_w1(read_r: ComponentIterator<R>, write_w1: ComponentIteratorMut<W1>) {
+fn system_w1(read_r: DenseComponentIterator<R>, write_w1: DenseComponentIteratorMut<W1>) {
     let joint = read_r.join(write_w1);
     let iterator = joint.into_iterator_wrapper();
     for (r, w1) in iterator {
@@ -148,7 +155,7 @@ fn system_w1(read_r: ComponentIterator<R>, write_w1: ComponentIteratorMut<W1>) {
     }
 }
 
-fn system_w2(read_r: ComponentIterator<R>, write_w2: ComponentIteratorMut<W2>){
+fn system_w2(read_r: DenseComponentIterator<R>, write_w2: DenseComponentIteratorMut<W2>){
     let joint = read_r.join(write_w2);
     let iterator = joint.into_iterator_wrapper();
     for (r, w2) in iterator {
@@ -156,7 +163,7 @@ fn system_w2(read_r: ComponentIterator<R>, write_w2: ComponentIteratorMut<W2>){
     }
 }
 
-fn system_movement(read: ComponentIterator<StubVelocity>, writer: ComponentIteratorMut<StubPosition>) {
+fn system_movement(read: DenseComponentIterator<StubVelocity>, writer: DenseComponentIteratorMut<StubPosition>) {
     let joint = read.join(writer);
     let iter = joint.into_iterator_wrapper();
     for (v, p) in iter {
@@ -203,5 +210,5 @@ impl Component for W2{
     }
 }
 
-criterion_group!(benches, ecs_allocate_new_entities_pos_vel, ecs_deallocate_empty_entity, ecs_deallocate_entity_with_component, ecs_register_component, ecs_add_new_component, ecs_remove_component, ecs_fetch_component, ecs_pos_vel_update, ecs_sequential_systems, ecs_parallel_systems);
+criterion_group!(benches, ecs_allocate_new_entities_pos_vel, ecs_deallocate_empty_entity, ecs_deallocate_entity_with_component, ecs_register_component, ecs_add_new_component, ecs_remove_component, ecs_fetch_component, ecs_pos_vel_update, ecs_sequential_systems);
 criterion_main!(benches);

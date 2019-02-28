@@ -7,15 +7,17 @@ mod tests;
 extern crate core;
 #[macro_use]
 extern crate downcast_rs;
+
 use component::ComponentStorage;
 use entity::management::EntityAllocator;
 use entity::EntityIndex;
-use std::any::Any;
 use component::Component;
-use component::ComponentReadHandle;
-use component::ComponentWriteHandle;
-use entity::management::EntityIterator;
+use std::any::Any;
+use component::handles::ComponentReadHandle;
+use component::handles::ComponentWriteHandle;
 use entity::management::EntityIteratorLive;
+use entity::management::EntityIterator;
+
 
 //generational data structure
 pub struct ECS {
@@ -85,24 +87,6 @@ impl<'cs> ECS {
             self.storage.remove_component::<T>(index)
         }
     }
-
-    /*
-    gives a mutable reference to an entities component for updating
-    */
-//    pub fn fetch<T: 'static>(&mut self, id: EntityIndex) -> Result<Option<&mut T>, &str> {
-//        if id.1 != self.entity_list.entity_list[id.0].generation && !self.entity_list.entity_list[id.0].is_live{
-//            Err("incorrect generation")
-//        }else{
-//            let component = self.storage.get_mut(&TypeId::of::<T>()).unwrap();
-//            let unwrapped_component = component[id.0].as_mut().unwrap();
-//            let downcast: Option<&mut T> = unwrapped_component.downcast_mut::<T>();
-//            Ok(downcast)
-//        }
-//    }
-
-//    pub fn iterator<T: Component>(&self) -> {
-//        self.storage.get::<T>().unwrap().write_handle().get_mut_iter()
-//    }
 
     pub fn get_component_read_handle<T: 'static + Component>(&self) -> ComponentReadHandle<T::ComponentStorage> {
         let res = self.storage.get::<T>().unwrap();

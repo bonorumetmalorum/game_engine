@@ -5,14 +5,11 @@ rust:
 
 before_install:
   - sudo apt-get install gnuplot
-  - sudo sh -c 'echo -1 >/proc/sys/kernel/perf_event_paranoid'
-  - ./performance/papi_install.sh
 
 script:
   - cargo build --verbose --all
   - cargo test --verbose --all
   - cargo bench
-  - cargo run
 
 branches:
   only:

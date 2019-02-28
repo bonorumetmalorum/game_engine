@@ -1,6 +1,7 @@
 use super::*;
 use core::slice;
-use component::Iter;
+use component::iter::Iter;
+
 
 //entry to define an allocation into a generational data structure
 pub struct Entry {
