@@ -6,7 +6,7 @@ use core::slice;
 use component::iter::Iter;
 
 #[derive(Clone)]
-pub struct DenseComponentStorage<T: Send + Sync + Clone>(pub Vec<ComponentEntry<T>>);
+pub struct DenseComponentStorage<T: Clone>(pub Vec<ComponentEntry<T>>);
 
 impl<T: Component> Default for DenseComponentStorage<T>{
     fn default() -> Self {
@@ -62,13 +62,13 @@ impl<'it, T: Component> Storage<'it> for DenseComponentStorage<T> {
     }
 }
 
-impl<'it, T: Send + Sync + Clone> DenseComponentStorage<T> {
+impl<'it, T: Clone> DenseComponentStorage<T> {
     pub fn new() -> DenseComponentStorage<T>{
         DenseComponentStorage(Vec::new())
     }
 }
 
-pub struct DenseComponentIteratorMut<'cs, T: 'cs + Send + Sync + Clone>{
+pub struct DenseComponentIteratorMut<'cs, T: 'cs + Clone>{
     st: slice::IterMut<'cs, ComponentEntry<T>>,
     current_index: usize
 }
@@ -101,7 +101,7 @@ impl<'it, T: Component> Iter for DenseComponentIteratorMut<'it, T>{
     }
 }
 
-impl<'it, T: 'static + Send + Sync + Clone> DenseComponentIteratorMut<'it, T> {
+impl<'it, T: 'static + Clone> DenseComponentIteratorMut<'it, T> {
 
     pub fn new(it: slice::Iter<'it, ComponentEntry<T>>) -> DenseComponentIterator<'it, T> {
         DenseComponentIterator{
@@ -115,7 +115,7 @@ impl<'it, T: 'static + Send + Sync + Clone> DenseComponentIteratorMut<'it, T> {
     }
 }
 
-pub struct DenseComponentIterator<'cs, T: 'cs + Send + Sync + Clone>{
+pub struct DenseComponentIterator<'cs, T: 'cs + Clone>{
     st: slice::Iter<'cs, ComponentEntry<T>>,
     current_index: usize
 }

@@ -17,18 +17,18 @@ pub mod storage;
 pub mod iter;
 pub mod handles;
 
-pub trait Component: 'static + Sized + Send + Sync + Clone{
+pub trait Component: 'static + Sized + Clone{
     type ComponentStorage: for<'st> Storage<'st, Component = Self>;
     fn update(&mut self);
 }
 
 #[derive(Clone)]
-pub enum ComponentEntry<T: Sized + Send + Sync + Clone>{
+pub enum ComponentEntry<T: Sized + Clone>{
     Empty,
     Entry(Box<T>)
 }
 
-impl<T: Sized + Send + Sync + Clone> ComponentEntry<T> {
+impl<T: Sized + Clone> ComponentEntry<T> {
     pub fn borrow_mut(&mut self) -> Option<&mut Box<T>> {
         match self {
             ComponentEntry::Entry(val) => Some(val),
