@@ -21,6 +21,7 @@ use ecs::component::dense_component_storage::DenseComponentStorage;
 use ecs::component::dense_component_storage::DenseComponentIterator;
 use ecs::component::dense_component_storage::DenseComponentIteratorMut;
 use ecs::component::iter::Iter;
+use ecs::component::storage::Storage;
 
 
 const STANDARD: usize = 10000;
@@ -177,12 +178,12 @@ fn main() {
             papi::CounterSet::new(counters)
         };
         let mut ecs = setup();
-        let hr1 = ecs.get_component_read_handle::<R>();
-        let hr2 = ecs.get_component_read_handle::<R>();
-        let mut hw1 = ecs.get_component_write_handle::<W1>();
-        let mut hw2 = ecs.get_component_write_handle::<W2>();
-        let itrr1 = hr1.get_iterator();
-        let itrr2 = hr2.get_iterator();
+        let hr1 = ecs.get::<R>();
+        let hr2 = ecs.get::<R>();
+        let mut hw1 = ecs.get_mut::<W1>();
+        let mut hw2 = ecs.get_mut::<W2>();
+        let itrr1 = hr1.get_iter();
+        let itrr2 = hr2.get_iter();
         let itrw1 = hw1.get_mut_iter();
         let itrw2 = hw2.get_mut_iter();
 

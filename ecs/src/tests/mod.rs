@@ -96,7 +96,7 @@ fn get_component_iterator(){
     entity_manager.add_component((0,0), StubComponentA{ counter: 0 }).expect("not registered");
     entity_manager.add_component((1,0), StubComponentA{ counter: 1 }).expect("not registered");
     entity_manager.add_component((2,0), StubComponentA{ counter: 2 }).expect("not registered");
-    let mut handle = entity_manager.get_component_write_handle::<StubComponentA>();
+    let mut handle = entity_manager.get_mut::<StubComponentA>();
     let mut it = handle.get_mut_iter();
     assert_eq!(it.index(), 0)
 }
@@ -112,7 +112,7 @@ fn get_component_test(){
     entity_manager.add_component((1,0), StubComponentA{ counter: 1 }).expect("not registered");
     entity_manager.add_component((2,0), StubComponentA{ counter: 2 }).expect("not registered");
     {
-        let comp = entity_manager.get_mut::<StubComponentA>();
+        let mut comp = entity_manager.get_mut::<StubComponentA>();
         let mut it = comp.get_mut_iter();
         loop{
             if let Some(x) = it.next_element(None) {
@@ -122,7 +122,7 @@ fn get_component_test(){
             }
         }
     }
-    let mut handle = entity_manager.get_component_write_handle::<StubComponentA>();
+    let mut handle = entity_manager.get_mut::<StubComponentA>();
     let it = handle.get_mut_iter();
     let iw = it.into_iterator_wrapper();
     let res: Vec<&mut Box<StubComponentA>> = iw.collect();
@@ -143,7 +143,7 @@ fn iterator_test_singular(){
     entity_manager.add_component((2,0), StubComponentA{counter: 0}).expect("not registered");
     entity_manager.add_component((1,0), StubComponentA{counter: 0}).expect("not registered");
     entity_manager.add_component((1,0), StubComponentB{counter: 100}).expect("not registered");
-    let mut handle = entity_manager.get_component_write_handle::<StubComponentB>();
+    let mut handle = entity_manager.get_mut::<StubComponentB>();
     let mut itb = handle.get_mut_iter();
     let result = itb.next_element(None);
     let result1 = itb.next_element(None);
@@ -164,8 +164,8 @@ fn iterator_join_test(){
     entity_manager.add_component((1,0), StubComponentA{counter: 0}).expect("not registered");
     entity_manager.add_component((1,0), StubComponentB{counter: 100}).expect("not registered");
     entity_manager.add_component((2,0), StubComponentA{counter: 0}).expect("not registered");
-    let mut compha = entity_manager.get_component_write_handle::<StubComponentA>();
-    let mut comphb = entity_manager.get_component_write_handle::<StubComponentB>();
+    let mut compha = entity_manager.get_mut::<StubComponentA>();
+    let mut comphb = entity_manager.get_mut::<StubComponentB>();
     let ita = compha.get_mut_iter();
     let itb = comphb.get_mut_iter();
     let joint = ita.join(itb);
@@ -189,7 +189,7 @@ fn iterator_vec_test(){
     entity_manager.add_component((1,0), StubComponentA{counter: 0}).expect("not registered");
     entity_manager.add_component((1,0), StubComponentB{counter: 100}).expect("not registered");
     entity_manager.add_component((2,0), StubComponentA{counter: 0}).expect("not registered");
-    let mut compha = entity_manager.get_component_write_handle::<StubComponentA>();
+    let mut compha = entity_manager.get_mut::<StubComponentA>();
     let ita = compha.get_mut_iter();
     let jit = ita.into_iterator_wrapper();
     let result: Vec<&mut Box<StubComponentA>> = jit.collect();
@@ -210,8 +210,8 @@ fn iterator_joint_vec_test(){
     entity_manager.add_component((1,0), StubComponentB{counter: 100}).expect("not registered");
     entity_manager.add_component((2,0), StubComponentA{counter: 0}).expect("not registered");
     entity_manager.add_component((2,0), StubComponentB{counter: 0}).expect("not registered");
-    let mut compha = entity_manager.get_component_write_handle::<StubComponentA>();
-    let mut comphb = entity_manager.get_component_write_handle::<StubComponentB>();
+    let mut compha = entity_manager.get_mut::<StubComponentA>();
+    let mut comphb = entity_manager.get_mut::<StubComponentB>();
     let ita = compha.get_mut_iter();
     let itb = comphb.get_mut_iter();
     let joint = ita.join(itb);
@@ -233,8 +233,8 @@ fn iterator_joint_uneven_vec_test(){
     entity_manager.add_component((1,0), StubComponentA{counter: 0}).expect("not registered");
     entity_manager.add_component((1,0), StubComponentB{counter: 100}).expect("not registered");
     entity_manager.add_component((2,0), StubComponentA{counter: 0}).expect("not registered");
-    let mut compha = entity_manager.get_component_write_handle::<StubComponentA>();
-    let mut comphb = entity_manager.get_component_write_handle::<StubComponentB>();
+    let mut compha = entity_manager.get_mut::<StubComponentA>();
+    let mut comphb = entity_manager.get_mut::<StubComponentB>();
     let ita = compha.get_mut_iter();
     let itb = comphb.get_mut_iter();
     let joint = ita.join(itb);
@@ -256,7 +256,7 @@ fn entity_iterator_test() {
     entity_manager.add_component((1, 0), StubComponentB { counter: 100 }).expect("not registered");
     entity_manager.add_component((2, 0), StubComponentA { counter: 0 }).expect("not registered");
     let ent_it = entity_manager.get_entity_iterator_live();
-    let mut compha = entity_manager.get_component_write_handle::<StubComponentA>();
+    let mut compha = entity_manager.get_mut::<StubComponentA>();
     let ita = compha.get_mut_iter();
     let jointea = ent_it.join(ita);
     let jointwrapper = jointea.into_iterator_wrapper();
@@ -290,8 +290,8 @@ fn entity_iterator_joint_test(){
     entity_manager.add_component(entity3, StubComponentA { counter: 0 }).expect("not registered");
     let _res = entity_manager.deallocate_entity(entity2).expect("Error when: ");
     let it = entity_manager.get_entity_iterator_live();
-    let ah = entity_manager.get_component_read_handle::<StubComponentA>();
-    let ita = ah.get_iterator();
+    let ah = entity_manager.get::<StubComponentA>();
+    let ita = ah.get_iter();
     let jointiter = it.join(ita);
     let jiter = jointiter.into_iterator_wrapper();
     let result = jiter.collect::<Vec<_>>();

@@ -8,11 +8,9 @@ use std::any::TypeId;
 use component::dense_component_storage::DenseComponentStorage;
 use std::collections::HashMap;
 use core::borrow::BorrowMut;
-use component::handles::ComponentWriteHandle;
-use component::handles::ComponentReadHandle;
 use std::cell::RefCell;
-use component::handles::SyncWriteHandle;
-use component::handles::SyncReadHandle;
+use std::cell::Ref;
+use std::cell::RefMut;
 
 pub mod dense_component_storage;
 pub mod storage;
@@ -39,7 +37,7 @@ impl<T: Sized + Send + Sync + Clone> ComponentEntry<T> {
     }
 }
 
-pub trait GenericComponentStorage: Send + Sync + Downcast{
+pub trait GenericComponentStorage: Downcast{
     fn remove(&mut self, index: EntityIndex) -> Result<EntityIndex, &str>;
 }
 impl_downcast!(GenericComponentStorage);
@@ -48,22 +46,23 @@ pub struct ComponentStore<T>(pub RefCell<T>);
 
 //switch RwLockWriteGuard to ComponentWrite/Read Handle.
 impl<'st, T: Storage<'st>> ComponentStore<T> {
-    pub fn write_handle(&self) -> SyncWriteHandle<T>{
-        SyncWriteHandle(&self.0)
+
+    pub fn write(&self) -> RefMut<T>{
+        self.0.borrow_mut()
     }
 
-    pub fn read_handle(&self) -> ComponentReadHandle<T>{
-        SyncReadHandle(&self.0)
+    pub fn read(&self) -> Ref<T>{
+        self.0.borrow()
     }
 
     pub fn get_mut_handle(&mut self) -> &mut T {
-        self.0.get_mut().unwrap()
+        self.0.get_mut()
     }
 }
 
 impl<'cs, T: 'static + Storage<'cs>> GenericComponentStorage for ComponentStore<T> {
     fn remove(&mut self, index: (usize, u64)) -> Result<(usize, u64), &str> {
-        self.0.get_mut().expect("poisoned lock").remove(index)
+        self.0.get_mut().remove(index)
     }
 }
 
@@ -82,7 +81,7 @@ impl<'st> ComponentStorage {
     pub fn register_component<T: Component>(&mut self) -> Result<(usize), &str>{
         let compstrg: DenseComponentStorage<T> = DenseComponentStorage::new();
         let len = compstrg.0.len();
-        let componentstore = ComponentStore(RwLock::new(compstrg));
+        let componentstore = ComponentStore(RefCell::new(compstrg));
         if let None = self.0.insert(TypeId::of::<T>(), Box::new(componentstore)) {
             Ok(len)
         }else{
@@ -92,7 +91,7 @@ impl<'st> ComponentStorage {
 
     pub fn add_component<T: Component>(&mut self, component: T, id: EntityIndex) -> Result<EntityIndex, &str> {
         if let Ok(storage) = self.get_mut::<T>(){
-            let mut store = storage.0.get_mut().unwrap();
+            let mut store = storage.0.get_mut();
             store.insert(id, component).expect("unable to insert component");
             Ok(id)
         }else{
@@ -102,7 +101,7 @@ impl<'st> ComponentStorage {
 
     pub fn remove_component<T: Component>(&mut self, id: EntityIndex) -> Result<EntityIndex, &str>{
         if let Ok(storage) = self.get_mut::<T>(){
-            let mut store = storage.0.get_mut().unwrap();
+            let mut store = storage.0.get_mut();
             if id.0 >= store.len() {
                 Err("entity does not have component")
             }else{

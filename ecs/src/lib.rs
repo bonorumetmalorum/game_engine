@@ -13,10 +13,10 @@ use entity::management::EntityAllocator;
 use entity::EntityIndex;
 use component::Component;
 use std::any::Any;
-use component::handles::ComponentReadHandle;
-use component::handles::ComponentWriteHandle;
 use entity::management::EntityIteratorLive;
 use entity::management::EntityIterator;
+use std::cell::RefMut;
+use std::cell::Ref;
 
 
 //generational data structure
@@ -88,22 +88,26 @@ impl<'cs> ECS {
         }
     }
 
-    pub fn get_component_read_handle<T: 'static + Component>(&self) -> ComponentReadHandle<T::ComponentStorage> {
+//    pub fn get_component_read_handle<T: 'static + Component>(&self) -> SyncReadHandle<T::ComponentStorage> {
+//        let res = self.storage.get::<T>().unwrap();
+//        let strg = &res.0;
+//        SyncReadHandle(strg)
+//    }
+//
+//    pub fn get_component_write_handle<T: 'static + Component>(&self) -> T::ComponentStorage {
+//        let res = self.storage.get::<T>().unwrap();
+//        let strg = &res.0;
+//        SyncWriteHandle(strg)
+//    }
+
+    pub fn get<T: Component>(&self) -> Ref<T::ComponentStorage>{
         let res = self.storage.get::<T>().unwrap();
-        let strg = res.0.read().unwrap();
-        ComponentReadHandle{ r: strg }
+        res.read()
     }
 
-    pub fn get_component_write_handle<T: 'static + Component>(&self) -> ComponentWriteHandle<T::ComponentStorage> {
+    pub fn get_mut<T: Component>(&self) -> RefMut<T::ComponentStorage>{
         let res = self.storage.get::<T>().unwrap();
-        let strg = res.0.write().unwrap();
-        ComponentWriteHandle{ w: strg }
-    }
-
-    pub fn get_mut<T: Component>(&mut self) -> &mut T::ComponentStorage{
-        let res = self.storage.get_mut::<T>().unwrap();
-        let component = res.0.get_mut().unwrap();
-        component
+        res.write()
     }
 
     pub fn get_entity_iterator_live(&self) -> EntityIteratorLive {
