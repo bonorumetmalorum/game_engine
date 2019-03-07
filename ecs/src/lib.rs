@@ -21,34 +21,51 @@ use std::collections::HashMap;
 use downcast_rs::Downcast;
 
 pub struct ResourceMap{
-    map: HashMap<Any, ResourceEntry>
+    map: HashMap<TypeId, Box<ResourceEntry>>
 }
 
-pub trait ResourceEntry: Downcast + Sized {}
+pub trait ResourceEntry: Downcast {}
 impl_downcast!(ResourceEntry);
 
 pub struct Resource<T>(RefCell<T>);
 
 impl ResourceMap{
-    pub fn get_write_resource<T>(&self) -> RefMut<T>{
+
+    pub fn get_write_resource<T:'static>(&self) -> Result<RefMut<T>, &str>{
         if let Some(x) = self.map.get(&TypeId::of::<T>()){
             if let Some(downcast) = x.downcast_ref::<Resource<T>>(){
-                //do something
+                Ok(downcast.get_mut())
             }else{
-                //err
+                Err("unable to downcast")
             }
 
         }else{
-            //err
+            Err("resource does not exist")
         }
     }
 
-    pub fn get_read_resource<T>(&self) -> Ref<T>{
-        self.map.get(&TypeId::of::<T>()).get()
+    pub fn get_read_resource<T:'static>(&self) -> Result<Ref<T>, &str>{
+        if let Some(entry) = self.map.get(&TypeId::of::<T>()) {
+            if let Some(t) = entry.downcast_ref::<Resource<T>>() {
+                Ok(t.get())
+            }else{
+                Err("unable to downcast")
+            }
+        }else{
+            Err("resource does not exist")
+        }
     }
 
-    pub fn insert_resource<T>(){
+    pub fn insert_resource<T:'static>(&mut self, resource: T){
+        self.map.insert(TypeId::of::<T>(), Box::new(Resource(RefCell::new(resource))));
+    }
+}
 
+impl Default for ResourceMap {
+    fn default() -> Self {
+        ResourceMap{
+            map: HashMap::new()
+        }
     }
 }
 
@@ -61,6 +78,8 @@ impl<T> Resource<T> {
         self.0.borrow()
     }
 }
+
+impl<T:'static> ResourceEntry for Resource<T> {}
 
 //maybe add anymap for shared resources here?
 pub struct ECS {
@@ -166,6 +185,6 @@ impl<'cs> ECS {
     returns a new empty entity storage
     */
     pub fn new() -> ECS {
-        ECS {storage: ComponentStorage::new(), entity_list: EntityAllocator::new(), size: 0}
+        ECS {storage: ComponentStorage::new(), entity_list: EntityAllocator::new(), size: 0, resources: ResourceMap::default()}
     }
 }
