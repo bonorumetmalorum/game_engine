@@ -12,17 +12,61 @@ use component::ComponentStorage;
 use entity::management::EntityAllocator;
 use entity::EntityIndex;
 use component::Component;
-use std::any::Any;
+use std::any::{Any, TypeId};
 use entity::management::EntityIteratorLive;
 use entity::management::EntityIterator;
-use std::cell::RefMut;
+use std::cell::{RefMut, RefCell};
 use std::cell::Ref;
+use std::collections::HashMap;
+use downcast_rs::Downcast;
 
+pub struct ResourceMap{
+    map: HashMap<Any, ResourceEntry>
+}
 
-//generational data structure
+pub trait ResourceEntry: Downcast + Sized {}
+impl_downcast!(ResourceEntry);
+
+pub struct Resource<T>(RefCell<T>);
+
+impl ResourceMap{
+    pub fn get_write_resource<T>(&self) -> RefMut<T>{
+        if let Some(x) = self.map.get(&TypeId::of::<T>()){
+            if let Some(downcast) = x.downcast_ref::<Resource<T>>(){
+                //do something
+            }else{
+                //err
+            }
+
+        }else{
+            //err
+        }
+    }
+
+    pub fn get_read_resource<T>(&self) -> Ref<T>{
+        self.map.get(&TypeId::of::<T>()).get()
+    }
+
+    pub fn insert_resource<T>(){
+
+    }
+}
+
+impl<T> Resource<T> {
+    pub fn get_mut(&self) -> RefMut<T> {
+        self.0.borrow_mut()
+    }
+
+    pub fn get(&self) -> Ref<T> {
+        self.0.borrow()
+    }
+}
+
+//maybe add anymap for shared resources here?
 pub struct ECS {
     pub storage: ComponentStorage,
     pub entity_list: EntityAllocator,
+    pub resources: ResourceMap,
     pub size: usize
 }
 
