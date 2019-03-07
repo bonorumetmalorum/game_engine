@@ -59,6 +59,13 @@ impl ResourceMap{
     pub fn insert_resource<T:'static>(&mut self, resource: T){
         self.map.insert(TypeId::of::<T>(), Box::new(Resource(RefCell::new(resource))));
     }
+
+    pub fn remove_resource<T:'static>(&mut self) -> Result<Box<ResourceEntry>, &str> {
+        match self.map.remove(&TypeId::of::<T>()) {
+            Some(x) => Ok(x),
+            None => Err("resource does not exist")
+        }
+    }
 }
 
 impl Default for ResourceMap {
@@ -151,18 +158,6 @@ impl<'cs> ECS {
         }
     }
 
-//    pub fn get_component_read_handle<T: 'static + Component>(&self) -> SyncReadHandle<T::ComponentStorage> {
-//        let res = self.storage.get::<T>().unwrap();
-//        let strg = &res.0;
-//        SyncReadHandle(strg)
-//    }
-//
-//    pub fn get_component_write_handle<T: 'static + Component>(&self) -> T::ComponentStorage {
-//        let res = self.storage.get::<T>().unwrap();
-//        let strg = &res.0;
-//        SyncWriteHandle(strg)
-//    }
-
     pub fn get<T: Component>(&self) -> Ref<T::ComponentStorage>{
         let res = self.storage.get::<T>().unwrap();
         res.read()
@@ -180,6 +175,29 @@ impl<'cs> ECS {
     pub fn get_entity_iterator(&self) -> EntityIterator {
         self.entity_list.get_iter()
     }
+
+    pub fn get_mut_resource<T: 'static>(&self) -> Result<RefMut<T>, &str>{
+        match self.resources.get_write_resource::<T>() {
+            Ok(x) => Ok(x),
+            Err(e) => Err(e)
+        }
+    }
+
+    pub fn get_resource<T: 'static>(&self) -> Result<Ref<T>, &str>{
+        match self.resources.get_read_resource::<T>() {
+            Ok(x) => Ok(x),
+            Err(e) => Err(e)
+        }
+    }
+
+    pub fn remove_resource<T:'static>(&mut self) -> Result<Box<ResourceEntry>, &str>{
+        match self.resources.remove_resource::<T>() {
+            Err(e) => Err(e),
+            Ok(x) => Ok(x)
+        }
+    }
+
+
 
     /*
     returns a new empty entity storage
