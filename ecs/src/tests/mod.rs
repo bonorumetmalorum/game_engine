@@ -298,3 +298,23 @@ fn entity_iterator_joint_test(){
     assert_eq!(result.len(), 2);
 }
 
+#[test]
+fn ecs_add_resource(){
+
+}
+
+#[test]
+fn ecs_remove_resource(){
+
+}
+
+#[test]
+fn ecs_get_resource(){
+
+}
+
+#[test]
+fn ecs_get_mut_resource(){
+
+}
+

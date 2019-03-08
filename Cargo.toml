@@ -2,6 +2,7 @@
 
 members = [
 	"ecs",
-	"performance"
+	"performance",
+	"phys"
 ]
 

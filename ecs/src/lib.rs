@@ -197,8 +197,6 @@ impl<'cs> ECS {
         }
     }
 
-
-
     /*
     returns a new empty entity storage
     */
