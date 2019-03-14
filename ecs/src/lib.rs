@@ -197,6 +197,10 @@ impl<'cs> ECS {
         }
     }
 
+    pub fn insert_new_resource<T:'static>(&mut self, resource: T){
+        self.resources.insert_resource::<T>(resource);
+    }
+
     /*
     returns a new empty entity storage
     */

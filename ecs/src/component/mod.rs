@@ -19,7 +19,6 @@ pub mod handles;
 
 pub trait Component: 'static + Sized + Clone{
     type ComponentStorage: for<'st> Storage<'st, Component = Self>;
-    fn update(&mut self);
 }
 
 #[derive(Clone)]
@@ -174,10 +173,6 @@ pub struct StubPosition{
 
 impl Component for StubPosition{
     type ComponentStorage = DenseComponentStorage<Self>;
-
-    fn update(&mut self) {
-        unimplemented!()
-    }
 }
 
 #[derive(Clone)]
@@ -188,8 +183,4 @@ pub struct StubVelocity{
 
 impl Component for StubVelocity{
     type ComponentStorage = DenseComponentStorage<Self>;
-
-    fn update(&mut self) {
-        unimplemented!()
-    }
 }
