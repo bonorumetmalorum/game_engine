@@ -14,6 +14,9 @@ use ecs::component::Component;
 use ecs::component::dense_component_storage::DenseComponentStorage;
 use kiss3d::scene::SceneNode;
 
+pub mod objects;
+pub mod engine;
+
 #[derive(Clone)]
 pub struct PhysicsComponent {
     handle: BodyHandle
@@ -22,6 +25,7 @@ pub struct PhysicsComponent {
 impl Component for PhysicsComponent {
     type ComponentStorage = DenseComponentStorage<Self>;
 }
+
 #[derive(Clone)]
 pub struct RenderComponent {
     node: SceneNode
