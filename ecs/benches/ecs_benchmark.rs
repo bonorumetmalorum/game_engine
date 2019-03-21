@@ -179,10 +179,6 @@ struct R{
 
 impl Component for R{
     type ComponentStorage = DenseComponentStorage<Self>;
-
-    fn update(&mut self) {
-        unimplemented!()
-    }
 }
 
 #[derive(Clone)]
@@ -193,9 +189,6 @@ struct W1{
 impl Component for W1{
     type ComponentStorage = DenseComponentStorage<Self>;
 
-    fn update(&mut self) {
-        unimplemented!()
-    }
 }
 
 #[derive(Clone)]
@@ -205,9 +198,6 @@ struct W2{
 
 impl Component for W2{
     type ComponentStorage = DenseComponentStorage<Self>;
-
-    fn update(&mut self) {
-    }
 }
 
 criterion_group!(benches, ecs_allocate_new_entities_pos_vel, ecs_deallocate_empty_entity, ecs_deallocate_entity_with_component, ecs_register_component, ecs_add_new_component, ecs_remove_component, ecs_fetch_component, ecs_pos_vel_update, ecs_sequential_systems);
