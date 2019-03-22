@@ -873,6 +873,7 @@ dependencies = [
  "nalgebra 0.17.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "ncollide3d 0.18.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "nphysics3d 0.10.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "num-traits 0.2.6 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]

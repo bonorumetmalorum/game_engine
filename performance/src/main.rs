@@ -31,7 +31,8 @@ const STANDARD: usize = 10000;
 
 #[derive(Clone)]
 struct R{
-    pub x: f32
+    pub x: f32,
+    pub y: f32
 }
 
 impl Component for R{
@@ -40,7 +41,8 @@ impl Component for R{
 
 #[derive(Clone)]
 struct W1{
-    pub x: f32
+    pub x: f32,
+    pub y: f32
 }
 
 impl Component for W1{
@@ -49,7 +51,8 @@ impl Component for W1{
 
 #[derive(Clone)]
 struct W2{
-    pub x: f32
+    pub x: f32,
+    pub y: f32
 }
 
 impl Component for W2{
@@ -71,9 +74,9 @@ fn setup(sample_size: usize) -> ECS {
     ecs.register_new_component::<W1>().expect("unable to register new component");
     ecs.register_new_component::<W2>().expect("unable to register new component");
     for ent in entities {
-        ecs.add_component(ent, R { x: 32.0 }).expect("not registered");
-        ecs.add_component(ent, W1 { x: 0.0 }).expect("not registered");
-        ecs.add_component(ent, W2 { x: 0.0 }).expect("not registered");
+        ecs.add_component(ent, R { x: 32.0, y:10.0}).expect("not registered");
+        ecs.add_component(ent, W1 { x: 10.0, y: 10.0 }).expect("not registered");
+        ecs.add_component(ent, W2 { x: 10.0, y: 10.0}).expect("not registered");
     }
     ecs
 }
@@ -209,8 +212,8 @@ fn main() {
 
     {
         //ramp up test - total sample size will be 10000
-        const NUM_SAMPLE: usize = 10000;
-        const NUM_STEP: usize = 1000;
+        const NUM_SAMPLE: usize = 1000;
+        const NUM_STEP: usize = 100000;
         let mut l1cachemiss: Vec<i64> = Vec::new();
         let mut l2cachemiss: Vec<i64> = Vec::new();
         let mut xaxis: Vec<usize> = Vec::new();
@@ -221,6 +224,7 @@ fn main() {
 
         for i in (0..NUM_SAMPLE).step_by(NUM_STEP){
             //setup
+            println!("testing for {} entities", i);
             let mut ecs = setup(i);
             let hr1 = ecs.get::<R>();
             let hr2 = ecs.get::<R>();
@@ -243,8 +247,13 @@ fn main() {
         //plotting
 
         for el in l2cachemiss.iter().zip(xaxis.iter()) {
-            println!("{}, {}", el.0, el.1);
+            println!("l2 cache misses {}, {}", el.0, el.1);
         }
+
+        for el in l1cachemiss.iter().zip(xaxis.iter()) {
+            println!("l1 cache misses {}, {}", el.0, el.1);
+        }
+
         let mut fg = Figure::new();
         fg.set_terminal("pngcairo", "./data/l1andl2cachemissscalability.png");
         fg.axes2d()
@@ -252,8 +261,10 @@ fn main() {
             .set_legend(Graph(1.0), Graph(0.5), &[], &[])
             .lines(xaxis.iter(), l1cachemiss.iter(), &[Caption("L1 cache misses"), Color("blue")])
             .lines(xaxis.iter(), l2cachemiss.iter(), &[Caption("L2 cache misses"), Color("red")])
-            .set_x_ticks(Some((Fix(1000.0), 1)), &[], &[])
-            .set_y_ticks(Some((Auto, 1)), &[], &[]);
+            .set_x_ticks(Some((Auto, 1)), &[], &[])
+            .set_y_ticks(Some((Auto, 1)), &[], &[])
+            .set_x_label("number of entities", &[])
+            .set_y_label("number of misses", &[]);
         fg.show();
     }
 }
