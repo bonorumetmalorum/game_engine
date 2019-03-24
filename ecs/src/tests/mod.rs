@@ -11,10 +11,6 @@ struct StubComponentA {
 
 impl Component for StubComponentA {
     type ComponentStorage = DenseComponentStorage<Self>;
-
-    fn update(&mut self) {
-        self.counter += 1;
-    }
 }
 #[derive(Clone)]
 struct StubComponentB {
@@ -23,10 +19,6 @@ struct StubComponentB {
 
 impl Component for StubComponentB{
     type ComponentStorage = DenseComponentStorage<Self>;
-
-    fn update(&mut self) {
-        self.counter += 1;
-    }
 }
 
 #[test]

@@ -1,7 +1,7 @@
 #[macro_use]
 extern crate criterion;
 extern crate ecs;
-extern crate crossbeam;
+extern crate core;
 
 use ecs::entity::EntityIndex;
 use ecs::ECS;
@@ -13,6 +13,8 @@ use ecs::component::Component;
 use ecs::component::dense_component_storage::DenseComponentStorage;
 use ecs::component::dense_component_storage::DenseComponentIteratorMut;
 use ecs::component::dense_component_storage::DenseComponentIterator;
+use core::borrow::BorrowMut;
+use ecs::component::storage::Storage;
 
 
 const NUM_POSITION_ONLY: usize = 9000;
@@ -85,9 +87,9 @@ fn ecs_remove_component(c: &mut Criterion){
 fn ecs_fetch_component(c: &mut Criterion){
     let ecs = setup_pos_vel();
     c.bench_function("ecs fetch component", move |b| b.iter(||{
-        let poshandle = ecs.get_component_read_handle::<StubPosition>();
-        let iterator = poshandle.get_iterator();
-        let iteratorwrapper = iterator.into_iterator_wrapper();
+        let mut poshandle = ecs.get_mut::<StubPosition>();
+        let iterator = poshandle.borrow_mut();
+        let iteratorwrapper = iterator.get_mut_iter().into_iterator_wrapper();
         let _result = iteratorwrapper.collect::<Vec<_>>();
     }));
 }
@@ -95,9 +97,9 @@ fn ecs_fetch_component(c: &mut Criterion){
 fn ecs_pos_vel_update(c: &mut Criterion){
     let ecs = setup_pos_vel();
     c.bench_function("ecs_pos_vel_update", move |b|b.iter(||{
-        let h1 = ecs.get_component_read_handle::<StubVelocity>();
-        let mut h2 = ecs.get_component_write_handle::<StubPosition>();
-        let itrr1 = h1.get_iterator();
+        let h1 = ecs.get::<StubVelocity>();
+        let mut h2 = ecs.get_mut::<StubPosition>();
+        let itrr1 = h1.get_iter();
         let itrr2 = h2.get_mut_iter();
         system_movement(itrr1, itrr2);
     }));
@@ -106,12 +108,12 @@ fn ecs_pos_vel_update(c: &mut Criterion){
 fn ecs_sequential_systems(c: &mut Criterion) {
     let ecs = setup_parallel();
     c.bench_function("ecs sequential systems", move |b| b.iter( ||{
-        let hr1 = ecs.get_component_read_handle::<R>();
-        let hr2 = ecs.get_component_read_handle::<R>();
-        let mut hw1 = ecs.get_component_write_handle::<W1>();
-        let mut hw2 = ecs.get_component_write_handle::<W2>();
-        let itrr1 = hr1.get_iterator();
-        let itrr2 = hr2.get_iterator();
+        let hr1 = ecs.get::<R>();
+        let hr2 = ecs.get::<R>();
+        let mut hw1 = ecs.get_mut::<W1>();
+        let mut hw2 = ecs.get_mut::<W2>();
+        let itrr1 = hr1.get_iter();
+        let itrr2 = hr2.get_iter();
         let itrw1 = hw1.get_mut_iter();
         let itrw2 = hw2.get_mut_iter();
         system_w1(itrr1, itrw1);

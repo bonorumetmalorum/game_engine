@@ -11,6 +11,7 @@ use core::borrow::BorrowMut;
 use std::cell::RefCell;
 use std::cell::Ref;
 use std::cell::RefMut;
+use fnv::FnvHashMap;
 
 pub mod dense_component_storage;
 pub mod storage;
@@ -66,7 +67,7 @@ impl<'cs, T: 'static + Storage<'cs>> GenericComponentStorage for ComponentStore<
 }
 
 pub struct ComponentStorage(
-    HashMap<TypeId, Box<GenericComponentStorage>>
+    FnvHashMap<TypeId, Box<GenericComponentStorage>>
 );
 //I think here i need to store a Box any and store vectors in the any
 //this will allow to downcast to a Vec<T> and subsequently get the appropriate iterator.
@@ -74,7 +75,7 @@ pub struct ComponentStorage(
 impl<'st> ComponentStorage {
 
     pub fn new() -> ComponentStorage {
-        ComponentStorage(HashMap::new())
+        ComponentStorage(FnvHashMap::default())
     }
 
     pub fn register_component<T: Component>(&mut self) -> Result<(usize), &str>{
