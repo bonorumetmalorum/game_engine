@@ -212,8 +212,8 @@ fn main() {
 
     {
         //ramp up test - total sample size will be 10000
-        const NUM_SAMPLE: usize = 1000;
-        const NUM_STEP: usize = 100000;
+        const NUM_SAMPLE: usize = 100000;
+        const NUM_STEP: usize = 10000;
         let mut l1cachemiss: Vec<i64> = Vec::new();
         let mut l2cachemiss: Vec<i64> = Vec::new();
         let mut xaxis: Vec<usize> = Vec::new();
@@ -244,6 +244,7 @@ fn main() {
             l1cachemiss.push(stop[0] - start[0]);
             l2cachemiss.push(stop[1] - start[1]);
         }
+        println!("plotting");
         //plotting
 
         for el in l2cachemiss.iter().zip(xaxis.iter()) {
