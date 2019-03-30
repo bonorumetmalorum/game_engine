@@ -1,0 +1,18 @@
+use ecs::component::Component;
+use ecs::component::dense_component_storage::DenseComponentStorage;
+
+pub enum Node {
+    Plane,
+    Ball,
+    Box,
+    Cylinder,
+    Cone,
+    Capsule,
+    Mesh,
+    HeightField,
+    Convex,
+}
+
+impl Component for Node {
+    type ComponentStorage = DenseComponentStorage<Self>;
+}

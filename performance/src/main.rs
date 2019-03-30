@@ -212,8 +212,8 @@ fn main() {
 
     {
         //ramp up test - total sample size will be 10000
-        const NUM_SAMPLE: usize = 100000;
-        const NUM_STEP: usize = 10000;
+        const NUM_SAMPLE: usize = 1000000;
+        const NUM_STEP: usize = 100000;
         let mut l1cachemiss: Vec<i64> = Vec::new();
         let mut l2cachemiss: Vec<i64> = Vec::new();
         let mut xaxis: Vec<usize> = Vec::new();

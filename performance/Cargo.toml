@@ -8,3 +8,6 @@ libc = "^0.1.8"
 rand = "^0.3.8"
 ecs = {path = "../ecs"}
 gnuplot = "0.0.29"
+
+[profile.cache]
+opt-level = 0

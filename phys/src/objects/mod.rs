@@ -1,9 +1,6 @@
-pub mod ball;
-pub mod plane;
-pub mod box_node;
-pub mod cylinder;
-pub mod cone;
-pub mod capsule;
-pub mod mesh;
-pub mod convex;
-pub mod heightfield;
+pub mod base_color;
+pub mod collider;
+pub mod color;
+pub mod delta;
+pub mod gfx;
+pub mod node;
