@@ -68,7 +68,9 @@ impl Engine {
         self.ecs.add_component(new_ent, Collider(object));
     }
 
-
+    /*
+        creates a box at position x y z with a specified color
+    */
     fn create_box(
         &mut self,
         object: ColliderHandle,

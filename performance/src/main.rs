@@ -211,61 +211,120 @@ fn main() {
     }
 
     {
-        //ramp up test - total sample size will be 10000
+
+        //ramp up tests - total sample size will be 1000000
         const NUM_SAMPLE: usize = 1000000;
-        const NUM_STEP: usize = 100000;
-        let mut l1cachemiss: Vec<i64> = Vec::new();
-        let mut l2cachemiss: Vec<i64> = Vec::new();
-        let mut xaxis: Vec<usize> = Vec::new();
-        let counters = &[papi::Counter::PAPI_L1_DCM, papi::Counter::PAPI_L2_DCM];
+        const NUM_STEP: usize = 1;
+        let counters = &[papi::Counter::PAPI_REF_CYC];
         let mut counters = unsafe {
             papi::CounterSet::new(counters)
         };
 
-        for i in (0..NUM_SAMPLE).step_by(NUM_STEP){
-            //setup
-            println!("testing for {} entities", i);
-            let mut ecs = setup(i);
-            let hr1 = ecs.get::<R>();
-            let hr2 = ecs.get::<R>();
-            let mut hw1 = ecs.get_mut::<W1>();
-            let mut hw2 = ecs.get_mut::<W2>();
-            let itrr1 = hr1.get_iter();
-            let itrr2 = hr2.get_iter();
-            let itrw1 = hw1.get_mut_iter();
-            let itrw2 = hw2.get_mut_iter();
-            //collection of data
+        //setup all ds
+        let mut ecs = setup(1000000);
+
+        //create test
+        let mut createxaxis: Vec<usize> = Vec::new();
+        let mut cpucreatecycles: Vec<i64> = Vec::new();
+        let mut test_ecs = ECS::new();
+        for i in 0..NUM_SAMPLE{
             let start = counters.read();
-            system_w1(itrr1, itrw1);
-            system_w2(itrr2, itrw2);
+            test_ecs.allocate_new_entity();
             let stop = counters.accum();
-            xaxis.push(i);
+            cpucreatecycles.push(stop[0] - start[0]);
+            createxaxis.push(i);
+        }
+
+        //plotting
+        for el in cpucreatecycles.iter().zip(createxaxis.iter()) {
+            println!("cpu cycles vs x ticks {}, {}", el.0, el.1);
+        }
+
+        let mut fg = Figure::new();
+        fg.set_terminal("pngcairo", "./data/cpucreatecycles.png");
+        fg.axes2d()
+            .set_title("CPU clock count vs create entities", &[])
+            .set_legend(Graph(1.0), Graph(0.5), &[], &[])
+            .lines(createxaxis.iter(), cpucreatecycles.iter(), &[Color("blue")])
+            .set_x_ticks(Some((Fix(1000.0), 0)), &[], &[])
+            .set_y_ticks(Some((Auto, 0)), &[], &[])
+            .set_x_label("number of entities", &[])
+            .set_y_label("Clock cycles", &[]);
+        fg.show();
+
+
+        //read test
+        println!("cpu cycle vs read test");
+        let hr1 = ecs.get::<R>();
+        let mut itrr1 = hr1.get_iter();
+        let mut readxaxis: Vec<usize> = Vec::new();
+        let mut cpureadcycles: Vec<i64> = Vec::new();
+        //data collection
+        for i in (0..NUM_SAMPLE).step_by(NUM_STEP){
+            println!("testing for {} entities", i);
+            //collection of data (need to get entities up to i)
+            let start = counters.read();
+            //read
+            let var = itrr1.next_element(None);
+            let stop = counters.accum();
+            readxaxis.push(i);
             //store results
-            l1cachemiss.push(stop[0] - start[0]);
-            l2cachemiss.push(stop[1] - start[1]);
+            cpureadcycles.push(stop[0] - start[0]);
         }
         println!("plotting");
         //plotting
 
-        for el in l2cachemiss.iter().zip(xaxis.iter()) {
-            println!("l2 cache misses {}, {}", el.0, el.1);
-        }
-
-        for el in l1cachemiss.iter().zip(xaxis.iter()) {
-            println!("l1 cache misses {}, {}", el.0, el.1);
+        for el in cpureadcycles.iter().zip(readxaxis.iter()) {
+            println!("cpu cycles vs x ticks {}, {}", el.0, el.1);
         }
 
         let mut fg = Figure::new();
-        fg.set_terminal("pngcairo", "./data/l1andl2cachemissscalability.png");
+        fg.set_terminal("pngcairo", "./data/cpureadcycles.png");
         fg.axes2d()
-            .set_title("L1 and L2 cache miss scalability", &[])
+            .set_title("CPU clock count vs reading entities", &[])
             .set_legend(Graph(1.0), Graph(0.5), &[], &[])
-            .lines(xaxis.iter(), l1cachemiss.iter(), &[Caption("L1 cache misses"), Color("blue")])
-            .lines(xaxis.iter(), l2cachemiss.iter(), &[Caption("L2 cache misses"), Color("red")])
-            .set_x_ticks(Some((Auto, 1)), &[], &[])
-            .set_y_ticks(Some((Auto, 1)), &[], &[])
+            .lines(readxaxis.iter(), cpureadcycles.iter(), &[Color("blue")])
+            .set_x_ticks(Some((Fix(1000.0), 0)), &[], &[])
+            .set_y_ticks(Some((Auto, 0)), &[], &[])
             .set_x_label("number of entities", &[])
-            .set_y_label("number of misses", &[]);
+            .set_y_label("Clock cycles", &[]);
+        fg.show();
+
+        //write test
+        println!("cpu cycle vs write test");
+
+        let mut writexaxis: Vec<usize> = Vec::new();
+        let mut cpuwritecycles: Vec<i64> = Vec::new();
+        let mut w1handle = ecs.get_mut::<W1>(); //write handle to data
+        let mut w1iter = w1handle.get_mut_iter(); //write iter to data
+        for i in (0..NUM_SAMPLE).step_by(NUM_STEP){
+            println!("testing for {} entities", i);
+            //collection of data (need to get entities up to i)
+            let start = counters.read();
+            //read
+            let var = w1iter.next_element(None);
+            let stop = counters.accum();
+            writexaxis.push(i);
+            //store results
+            cpuwritecycles.push(stop[0] - start[0]);
+        }
+        println!("plotting");
+        //plotting
+
+        for el in cpuwritecycles.iter().zip(writexaxis.iter()) {
+            println!("cpu cycles vs x ticks {}, {}", el.0, el.1);
+        }
+
+        let mut fg = Figure::new();
+        fg.set_terminal("pngcairo", "./data/cpuwritecycles.png");
+        fg.axes2d()
+            .set_title("CPU clock count vs write entities", &[])
+            .set_legend(Graph(1.0), Graph(0.5), &[], &[])
+            .lines(writexaxis.iter(), cpuwritecycles.iter(), &[Color("blue")])
+            .set_x_ticks(Some((Fix(1000.0), 0)), &[], &[])
+            .set_y_ticks(Some((Auto, 0)), &[], &[])
+            .set_x_label("number of entities", &[])
+            .set_y_label("Clock cycles", &[]);
         fg.show();
     }
 }
