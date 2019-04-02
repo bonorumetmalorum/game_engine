@@ -212,8 +212,8 @@ fn main() {
 
     {
 
-        //ramp up tests - total sample size will be 1000000
-        const NUM_SAMPLE: usize = 1000000;
+        //ramp up tests - total sample size will be 10000
+        const NUM_SAMPLE: usize = 10000;
         const NUM_STEP: usize = 1;
         let counters = &[papi::Counter::PAPI_REF_CYC];
         let mut counters = unsafe {
@@ -221,7 +221,7 @@ fn main() {
         };
 
         //setup all ds
-        let mut ecs = setup(1000000);
+        let mut ecs = setup(10000);
 
         //create test
         let mut createxaxis: Vec<usize> = Vec::new();
@@ -241,12 +241,12 @@ fn main() {
         }
 
         let mut fg = Figure::new();
-        fg.set_terminal("pngcairo", "./data/cpucreatecycles.png");
+        fg.set_terminal("pngcairo size 800, 600", "./data/cpucreatecycles.png");
         fg.axes2d()
             .set_title("CPU clock count vs create entities", &[])
             .set_legend(Graph(1.0), Graph(0.5), &[], &[])
             .lines(createxaxis.iter(), cpucreatecycles.iter(), &[Color("blue")])
-            .set_x_ticks(Some((Fix(1000.0), 0)), &[], &[])
+            .set_x_ticks(Some((Auto, 0)), &[], &[])
             .set_y_ticks(Some((Auto, 0)), &[], &[])
             .set_x_label("number of entities", &[])
             .set_y_label("Clock cycles", &[]);
@@ -279,12 +279,12 @@ fn main() {
         }
 
         let mut fg = Figure::new();
-        fg.set_terminal("pngcairo", "./data/cpureadcycles.png");
+        fg.set_terminal("pngcairo size 800, 600", "./data/cpureadcycles.png");
         fg.axes2d()
             .set_title("CPU clock count vs reading entities", &[])
             .set_legend(Graph(1.0), Graph(0.5), &[], &[])
             .lines(readxaxis.iter(), cpureadcycles.iter(), &[Color("blue")])
-            .set_x_ticks(Some((Fix(1000.0), 0)), &[], &[])
+            .set_x_ticks(Some((Auto, 0)), &[], &[])
             .set_y_ticks(Some((Auto, 0)), &[], &[])
             .set_x_label("number of entities", &[])
             .set_y_label("Clock cycles", &[]);
@@ -316,12 +316,12 @@ fn main() {
         }
 
         let mut fg = Figure::new();
-        fg.set_terminal("pngcairo", "./data/cpuwritecycles.png");
+        fg.set_terminal("pngcairo size 800, 600", "./data/cpuwritecycles.png");
         fg.axes2d()
             .set_title("CPU clock count vs write entities", &[])
             .set_legend(Graph(1.0), Graph(0.5), &[], &[])
             .lines(writexaxis.iter(), cpuwritecycles.iter(), &[Color("blue")])
-            .set_x_ticks(Some((Fix(1000.0), 0)), &[], &[])
+            .set_x_ticks(Some((Auto, 0)), &[], &[])
             .set_y_ticks(Some((Auto, 0)), &[], &[])
             .set_x_label("number of entities", &[])
             .set_y_label("Clock cycles", &[]);
