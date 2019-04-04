@@ -10,12 +10,28 @@ use nalgebra::Point3;
 use nalgebra::geometry::Isometry;
 use crate::objects::collider::Collider;
 use kiss3d::scene::SceneNode;
+use crate::objects::base_color::BaseColor;
+use crate::objects::color::Color;
+use crate::objects::delta::Delta;
+use crate::objects::node::Node;
 
 pub struct Engine {
     ecs: ECS
 }
 
 impl Engine {
+
+    pub fn new(){
+        let mut ecs = ECS::new();
+    let world: World<f32> = nphysics3d::world::World::new();
+        let _ = ecs.register_new_component::<BaseColor>();
+        let _ = ecs.register_new_component::<Collider>();
+        let _ = ecs.register_new_component::<Color>();
+        let _ = ecs.register_new_component::<Delta>();
+        let _ = ecs.register_new_component::<Node>();
+        let _ = ecs.insert_new_resource(world);
+        Engine(ecs)
+    }
 
     pub fn create_plane(
         &mut self,
@@ -46,20 +62,18 @@ impl Engine {
 
     fn create_ball(
         &mut self,
+        rad: f32,
         object: ColliderHandle,
         delta: Isometry3<f32>,
         color: Point3<f32>)
     {
         //shared resources
         let mut world = self.ecs.get_resource::<World<f32>>().unwrap();
-        let mut window = self.ecs.get_resource::<Window>().unwrap();
-        let mut ex: SceneNode;
         //allocate a new entity
         let new_ent = self.ecs.allocate_new_entity();
         //create ball
         let ball = ShapeHandle::new(Ball::new(rad));
-        let collider_desc = ColliderDesc::new(ball)
-            .density(1.0);
+        let collider_desc = ColliderDesc::new(ball).density(1.0);
         //rigid body creation
         let mut rb_desc = RigidBodyDesc::new()
             .collider(&collider_desc);
