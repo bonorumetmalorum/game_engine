@@ -61,9 +61,14 @@ impl ResourceMap{
         self.map.insert(TypeId::of::<T>(), Box::new(Resource(RefCell::new(resource))));
     }
 
-    pub fn remove_resource<T:'static>(&mut self) -> Result<Box<ResourceEntry>, &str> {
+    pub fn remove_resource<T:'static>(&mut self) -> Result<Resource<T>, &str> {
         match self.map.remove(&TypeId::of::<T>()) {
-            Some(x) => Ok(x),
+            Some(x) => {
+                match x.downcast::<Resource<T>>() {
+                    Ok(x) => Ok(*x),
+                    Err(s) => Err("error downcasting removed type")
+                }
+            },
             None => Err("resource does not exist")
         }
     }
@@ -191,7 +196,7 @@ impl<'cs> ECS {
         }
     }
 
-    pub fn remove_resource<T:'static>(&mut self) -> Result<Box<ResourceEntry>, &str>{
+    pub fn remove_resource<T:'static>(&mut self) -> Result<Resource<T>, &str>{
         match self.resources.remove_resource::<T>() {
             Err(e) => Err(e),
             Ok(x) => Ok(x)
