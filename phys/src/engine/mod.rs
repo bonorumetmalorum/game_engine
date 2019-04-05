@@ -16,21 +16,21 @@ use crate::objects::delta::Delta;
 use crate::objects::node::Node;
 
 pub struct Engine {
-    ecs: ECS
+    ecs: ECS,
+    physicsworld: World<f23> //has to be kept here instead of in the resources due to limitation of nphysics library
 }
 
 impl Engine {
 
-    pub fn new(){
+    pub fn new() -> Engine{
         let mut ecs = ECS::new();
-    let world: World<f32> = nphysics3d::world::World::new();
+        let world: World<f32> = nphysics3d::world::World::new();
         let _ = ecs.register_new_component::<BaseColor>();
         let _ = ecs.register_new_component::<Collider>();
         let _ = ecs.register_new_component::<Color>();
         let _ = ecs.register_new_component::<Delta>();
         let _ = ecs.register_new_component::<Node>();
-        let _ = ecs.insert_new_resource(world);
-        Engine(ecs)
+        Engine{ ecs , physicsworld: world}
     }
 
     pub fn create_plane(
@@ -67,8 +67,6 @@ impl Engine {
         delta: Isometry3<f32>,
         color: Point3<f32>)
     {
-        //shared resources
-        let mut world = self.ecs.get_resource::<World<f32>>().unwrap();
         //allocate a new entity
         let new_ent = self.ecs.allocate_new_entity();
         //create ball
@@ -78,7 +76,7 @@ impl Engine {
         let mut rb_desc = RigidBodyDesc::new()
             .collider(&collider_desc);
         //build the ball in the phys world
-        rb_desc.build(world);
+        let handle = rb_desc.build(&self.physicsworld);
         self.ecs.add_component(new_ent, Collider(object));
     }
 
