@@ -4,3 +4,4 @@ pub mod color;
 pub mod delta;
 pub mod gfx;
 pub mod node;
+pub mod rigidbody;
