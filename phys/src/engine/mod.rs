@@ -78,7 +78,6 @@ impl Engine {
         let mut rb_desc = RigidBodyDesc::new()
             .collider(&collider_desc);
         //build the ball in the phys world
-        self.physicsworld.add_rigid_body();
         let handle = rb_desc.build(&self.physicsworld);
         self.ecs.add_component(new_ent, RigidBodyComponent(handle));
     }
