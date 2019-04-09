@@ -16,6 +16,8 @@ use crate::objects::delta::Delta;
 use crate::objects::node::Node;
 use crate::objects::rigidbody::RigidBody;
 use crate::objects::rigidbody::RigidBodyComponent;
+use crate::objects::gfx::Gfx;
+use ecs::entity::EntityIndex;
 
 pub struct Engine {
     ecs: ECS,
@@ -35,40 +37,18 @@ impl Engine {
         Engine{ ecs , physicsworld: world}
     }
 
-    pub fn create_plane(
-        &mut self,
-        object: ColliderHandle,
-        color: Point3<f32>,
-    ) {
-        let pos = world.collider(object).unwrap().position();
-        let position = Point3::from(pos.translation.vector);
-        let normal = pos * shape.normal();
-    }
-
-    fn create_heightfield(
-        &mut self,
-        object: ColliderHandle,
-        delta: Isometry3<f32>,
-        color: Point3<f32>,
-    ) {
+    pub fn create_plane(&mut self, position: Isometry3<f32>) -> EntityIndex {
 
     }
 
-    fn create_capsule(
-        &mut self,
-        object: ColliderHandle,
-        delta: Isometry3<f32>,
-        color: Point3<f32>,
-    ) {
+    pub fn create_heightfield(&mut self, delta: Isometry3<f32>) -> EntityIndex {
+
     }
 
-    fn create_ball(
-        &mut self,
-        rad: f32,
-        object: ColliderHandle,
-        delta: Isometry3<f32>,
-        color: Point3<f32>)
-    {
+    pub fn create_capsule(&mut self, delta: Isometry3<f32>) -> EntityIndex {
+    }
+
+    pub fn create_ball(&mut self, rad: f32, delta: Isometry3<f32>) -> EntityIndex {
         //allocate a new entity
         let new_ent = self.ecs.allocate_new_entity();
         //create ball
@@ -77,21 +57,17 @@ impl Engine {
         //rigid body creation
         let mut rb_desc = RigidBodyDesc::new()
             .collider(&collider_desc);
-        //build the ball in the phys world
+        //build the ball in the phys world and add the component to the entity
         self.physicsworld.add_rigid_body();
         let handle = rb_desc.build(&self.physicsworld);
         self.ecs.add_component(new_ent, RigidBodyComponent(handle));
+        //add the scene node to the window
+        let mut window = self.ecs.get_mut_resource::<Window>().unwrap();
+        let node = window.add_sphere(rad);
+        let _ = self.ecs.add_component(new_ent, Gfx(node));
     }
 
-    /*
-        creates a box at position x y z with a specified color
-    */
-    fn create_box(
-        &mut self,
-        object: ColliderHandle,
-        delta: Isometry3<f32>,
-        color: Point3<f32>,
-    ) {
+    pub fn create_box(&mut self, delta: Isometry3<f32>) -> EntityIndex {
         let margin = world.collider(object).unwrap().margin();
         let rx = shape.half_extents().x + margin;
         let ry = shape.half_extents().y + margin;
@@ -99,12 +75,7 @@ impl Engine {
         //add to ecs
     }
 
-    fn create_convex(
-        &mut self,
-        object: ColliderHandle,
-        delta: Isometry3<f32>,
-        color: Point3<f32>,
-    ) {
+    pub fn create_convex(&mut self, delta: Isometry3<f32>) -> EntityIndex {
         let mut chull = transformation::convex_hull(shape.points());
         chull.replicate_vertices();
         chull.recompute_normals();
