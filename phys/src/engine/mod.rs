@@ -67,12 +67,13 @@ impl Engine {
         let _ = self.ecs.add_component(new_ent, Gfx(node));
     }
 
-    pub fn create_box(&mut self, delta: Isometry3<f32>) -> EntityIndex {
+    pub fn create_box(&mut self, rad: f32, delta: Isometry3<f32>) -> EntityIndex {
         let margin = world.collider(object).unwrap().margin();
         let rx = shape.half_extents().x + margin;
         let ry = shape.half_extents().y + margin;
         let rz = shape.half_extents().z + margin;
-        //add to ecs
+        let cube = ShapeHandle::new(Cuboid::new(Vector3::repeat(rad)));
+        //create rigid body collider etc...
     }
 
     pub fn create_convex(&mut self, delta: Isometry3<f32>) -> EntityIndex {
