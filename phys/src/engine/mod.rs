@@ -26,7 +26,7 @@ pub struct Engine {
 
 impl Engine {
 
-    pub fn new() -> Engine{
+    pub fn new() -> Engine {
         let mut ecs = ECS::new();
         let world: World<f32> = nphysics3d::world::World::new();
         let _ = ecs.register_new_component::<BaseColor>();
@@ -34,11 +34,7 @@ impl Engine {
         let _ = ecs.register_new_component::<Color>();
         let _ = ecs.register_new_component::<Delta>();
         let _ = ecs.register_new_component::<Node>();
-        Engine{ ecs , physicsworld: world}
-    }
-
-    pub fn create_plane(&mut self, position: Isometry3<f32>) -> EntityIndex {
-
+        Engine { ecs, physicsworld: world }
     }
 
     pub fn create_heightfield(&mut self, delta: Isometry3<f32>) -> EntityIndex {
@@ -65,14 +61,20 @@ impl Engine {
         let node = window.add_sphere(rad);
         let _ = self.ecs.add_component(new_ent, Gfx(node));
     }
-
+    /*
+        look up proximity queries and what they are...
+        need to add/remove code to do with activation surface and line width depending on findings
+    */
     pub fn create_box(&mut self, rad: f32, delta: Isometry3<f32>) -> EntityIndex {
-        let margin = world.collider(object).unwrap().margin();
-        let rx = shape.half_extents().x + margin;
-        let ry = shape.half_extents().y + margin;
-        let rz = shape.half_extents().z + margin;
         let cube = ShapeHandle::new(Cuboid::new(Vector3::repeat(rad)));
-        //create rigid body collider etc...
+        let handle = ColliderDesc::new(cube).set_position(delta).build(&self.physicsworld);
+        let new_entity = self.ecs.allocate_new_entity();
+        let _ = self.ecs.add_component(new_entity, Collider(handle));
+        let mut window = self.ecs.get_resource::<Window>().unwrap();
+        let mut scenenode = window.add_cube(rad, rad, rad);
+        scenenode.set_surface_rendering_activation(false);
+        scenenode.set_lines_width(1.0);
+        let _ = self.ecs.add_component(new_entity, Gfx(scenenode));
     }
 
     pub fn create_convex(&mut self, delta: Isometry3<f32>) -> EntityIndex {
