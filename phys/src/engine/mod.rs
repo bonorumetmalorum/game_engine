@@ -18,6 +18,7 @@ use crate::objects::rigidbody::RigidBody;
 use crate::objects::rigidbody::RigidBodyComponent;
 use crate::objects::gfx::Gfx;
 use ecs::entity::EntityIndex;
+use kiss3d::window::State;
 
 pub struct Engine {
     ecs: ECS,
@@ -35,13 +36,6 @@ impl Engine {
         let _ = ecs.register_new_component::<Delta>();
         let _ = ecs.register_new_component::<Node>();
         Engine { ecs, physicsworld: world }
-    }
-
-    pub fn create_heightfield(&mut self, delta: Isometry3<f32>) -> EntityIndex {
-
-    }
-
-    pub fn create_capsule(&mut self, delta: Isometry3<f32>) -> EntityIndex {
     }
 
     pub fn create_ball(&mut self, rad: f32, delta: Isometry3<f32>) -> EntityIndex {
@@ -76,11 +70,11 @@ impl Engine {
         scenenode.set_lines_width(1.0);
         let _ = self.ecs.add_component(new_entity, Gfx(scenenode));
     }
+}
 
-    pub fn create_convex(&mut self, delta: Isometry3<f32>) -> EntityIndex {
-        let mut chull = transformation::convex_hull(shape.points());
-        chull.replicate_vertices();
-        chull.recompute_normals();
-        //add to ecs
+impl State for Engine {
+    fn step(&mut self, window: &mut Window) {
+        self.physicsworld.step();
+        unimplemented!()
     }
 }
