@@ -14,7 +14,6 @@ use crate::objects::base_color::BaseColor;
 use crate::objects::color::Color;
 use crate::objects::delta::Delta;
 use crate::objects::node::Node;
-use crate::objects::rigidbody::RigidBody;
 use crate::objects::rigidbody::RigidBodyComponent;
 use crate::objects::gfx::Gfx;
 use ecs::entity::EntityIndex;
@@ -22,7 +21,8 @@ use kiss3d::window::State;
 
 pub struct Engine {
     ecs: ECS,
-    physicsworld: World<f23> //has to be kept here instead of in the resources due to limitation of nphysics library
+    physicsworld: World<f23>, //has to be kept here instead of in the resources due to limitation of nphysics library
+    window: Window
 }
 
 impl Engine {
@@ -30,12 +30,13 @@ impl Engine {
     pub fn new() -> Engine {
         let mut ecs = ECS::new();
         let world: World<f32> = nphysics3d::world::World::new();
+        let mut window = Window::new("phyics window");
         let _ = ecs.register_new_component::<BaseColor>();
         let _ = ecs.register_new_component::<Collider>();
         let _ = ecs.register_new_component::<Color>();
         let _ = ecs.register_new_component::<Delta>();
         let _ = ecs.register_new_component::<Node>();
-        Engine { ecs, physicsworld: world }
+        Engine { ecs, physicsworld: world, window }
     }
 
     pub fn create_ball(&mut self, rad: f32, delta: Isometry3<f32>) -> EntityIndex {
@@ -53,7 +54,7 @@ impl Engine {
         //add the scene node to the window
         let mut window = self.ecs.get_mut_resource::<Window>().unwrap();
         let node = window.add_sphere(rad);
-        let _ = self.ecs.add_component(new_ent, Gfx(node));
+        self.ecs.add_component(new_ent, Gfx(node)).unwrap()
     }
     /*
         look up proximity queries and what they are...
@@ -68,7 +69,11 @@ impl Engine {
         let mut scenenode = window.add_cube(rad, rad, rad);
         scenenode.set_surface_rendering_activation(false);
         scenenode.set_lines_width(1.0);
-        let _ = self.ecs.add_component(new_entity, Gfx(scenenode));
+        self.ecs.add_component(new_entity, Gfx(scenenode)).unwrap()
+    }
+
+    pub fn run(self) {
+        self.window.render_loop(self)
     }
 }
 

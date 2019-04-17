@@ -1,6 +1,8 @@
 use ecs::component::Component;
 use ecs::component::dense_component_storage::DenseComponentStorage;
 
+
+#[derive(Clone)]
 pub enum Node {
     Plane,
     Ball,

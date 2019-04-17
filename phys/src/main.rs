@@ -13,6 +13,7 @@ use nphysics3d::world::World;
 use ecs::component::Component;
 use ecs::component::dense_component_storage::DenseComponentStorage;
 use kiss3d::scene::SceneNode;
+use crate::engine::Engine;
 
 pub mod objects;
 pub mod engine;
@@ -36,15 +37,17 @@ impl Component for RenderComponent {
 }
 
 fn main() {
-    let mut ecs = setup_ecs();
-    let mut window = Window::new("physics demo");
-    let mut c = window.add_cube(1.0,1.0,1.0);
-    window.set_light(Light::StickToCamera);
-    let rot = UnitQuaternion::from_axis_angle(&Vector3::y_axis(), 0.014);
-
-    while window.render() {
-        c.prepend_to_local_rotation(&rot);
-    }
+//    let mut ecs = setup_ecs();
+//    let mut window = Window::new("physics demo");
+//    let mut c = window.add_cube(1.0,1.0,1.0);
+//    window.set_light(Light::StickToCamera);
+//    let rot = UnitQuaternion::from_axis_angle(&Vector3::y_axis(), 0.014);
+//
+//    while window.render() {
+//        c.prepend_to_local_rotation(&rot);
+//    }
+    let mut engine = Engine::new();
+    engine.run();
 }
 
 fn setup_ecs() -> ECS {

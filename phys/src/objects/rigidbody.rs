@@ -3,9 +3,11 @@ use ecs::component::Component;
 use ecs::component::dense_component_storage::DenseComponentStorage;
 use nphysics3d::object::RigidBody;
 
-pub struct RigidBodyComponent<'a>(&'a mut RigidBody<f32>);
 
-impl Component for RigidBodyComponent{
+#[derive(Clone)]
+pub struct RigidBodyComponent<'a>(pub &'a mut RigidBody<f32>);
+
+impl Component for RigidBodyComponent<'static>{
     type ComponentStorage = DenseComponentStorage<Self>;
 }
 

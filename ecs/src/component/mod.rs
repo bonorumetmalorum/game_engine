@@ -22,6 +22,7 @@ pub trait Component: 'static + Sized + Clone{
     type ComponentStorage: for<'st> Storage<'st, Component = Self>;
 }
 
+//need to remove this badly
 #[derive(Clone)]
 pub enum ComponentEntry<T: Sized + Clone>{
     Empty,
