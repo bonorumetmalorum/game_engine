@@ -18,11 +18,13 @@ use crate::objects::rigidbody::RigidBodyComponent;
 use crate::objects::gfx::Gfx;
 use ecs::entity::EntityIndex;
 use kiss3d::window::State;
+use nalgebra::Vector3;
+use core::mem;
 
 pub struct Engine {
     ecs: ECS,
-    physicsworld: World<f23>, //has to be kept here instead of in the resources due to limitation of nphysics library
-    window: Window
+    physicsworld: World<f32>, //has to be kept here instead of in the resources due to limitation of nphysics library
+    window: Option<Box<Window>>
 }
 
 impl Engine {
@@ -36,7 +38,7 @@ impl Engine {
         let _ = ecs.register_new_component::<Color>();
         let _ = ecs.register_new_component::<Delta>();
         let _ = ecs.register_new_component::<Node>();
-        Engine { ecs, physicsworld: world, window }
+        Engine { ecs, physicsworld: world, window: Some(Box::new(window)) }
     }
 
     pub fn create_ball(&mut self, rad: f32, delta: Isometry3<f32>) -> EntityIndex {
@@ -48,13 +50,10 @@ impl Engine {
         //rigid body creation
         let mut rb_desc = RigidBodyDesc::new()
             .collider(&collider_desc);
-        self.physicsworld.add_rigid_body();
-        let handle = rb_desc.build(&self.physicsworld);
-        self.ecs.add_component(new_ent, RigidBodyComponent(handle));
+        let handle = rb_desc.build(&mut self.physicsworld).handle();
+        self.ecs.add_component(new_ent, RigidBodyComponent(handle)).unwrap()
         //add the scene node to the window
-        let mut window = self.ecs.get_mut_resource::<Window>().unwrap();
-        let node = window.add_sphere(rad);
-        self.ecs.add_component(new_ent, Gfx(node)).unwrap()
+        //self.ecs.add_component(new_ent, Gfx(node)).unwrap()
     }
     /*
         look up proximity queries and what they are...
@@ -62,18 +61,19 @@ impl Engine {
     */
     pub fn create_box(&mut self, rad: f32, delta: Isometry3<f32>) -> EntityIndex {
         let cube = ShapeHandle::new(Cuboid::new(Vector3::repeat(rad)));
-        let handle = ColliderDesc::new(cube).set_position(delta).build(&self.physicsworld);
+        let handle = ColliderDesc::new(cube).set_position(delta).build(&mut self.physicsworld).handle();
         let new_entity = self.ecs.allocate_new_entity();
-        let _ = self.ecs.add_component(new_entity, Collider(handle));
-        let mut window = self.ecs.get_resource::<Window>().unwrap();
-        let mut scenenode = window.add_cube(rad, rad, rad);
-        scenenode.set_surface_rendering_activation(false);
-        scenenode.set_lines_width(1.0);
-        self.ecs.add_component(new_entity, Gfx(scenenode)).unwrap()
+        self.ecs.add_component(new_entity, Collider(handle)).unwrap()
+        //let mut window = self.ecs.get_resource::<Window>().unwrap();
+        //let mut scenenode = window.add_cube(rad, rad, rad);
+        //scenenode.set_surface_rendering_activation(false);
+        //scenenode.set_lines_width(1.0);
+        //self.ecs.add_component(new_entity, Gfx(scenenode)).unwrap()
     }
 
-    pub fn run(self) {
-        self.window.render_loop(self)
+    pub fn run(mut self) {
+        let window = mem::replace(&mut self.window, None).unwrap();
+        window.render_loop(self)
     }
 }
 

@@ -5,9 +5,8 @@ use nphysics3d::object::RigidBody;
 
 
 #[derive(Clone)]
-pub struct RigidBodyComponent<'a>(pub &'a mut RigidBody<f32>);
+pub struct RigidBodyComponent(pub BodyHandle);
 
-impl Component for RigidBodyComponent<'static>{
+impl Component for RigidBodyComponent{
     type ComponentStorage = DenseComponentStorage<Self>;
 }
-
