@@ -80,6 +80,5 @@ impl Engine {
 impl State for Engine {
     fn step(&mut self, window: &mut Window) {
         self.physicsworld.step();
-        unimplemented!()
     }
 }
