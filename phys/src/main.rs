@@ -14,6 +14,7 @@ use ecs::component::Component;
 use ecs::component::dense_component_storage::DenseComponentStorage;
 use kiss3d::scene::SceneNode;
 use crate::engine::Engine;
+use nalgebra::geometry::{Isometry3, Translation, Translation3, Rotation3};
 
 pub mod objects;
 pub mod engine;
@@ -47,6 +48,10 @@ fn main() {
 //        c.prepend_to_local_rotation(&rot);
 //    }
     let mut engine = Engine::new();
+    engine.create_ball(
+        0.1,
+        Isometry3::identity()
+    );
     engine.run();
 }
 
@@ -65,6 +70,7 @@ fn setup_ecs() -> ECS {
     let ground_size = 50.0;
     let ground_shape = ShapeHandle::new(Cuboid::new(Vector3::repeat(ground_size)));
     let physhandle = ColliderDesc::new(ground_shape).translation(Vector3::y() * -ground_size).build(&mut world).handle();
+
 
     let res = ecs.register_new_component::<PhysicsComponent>();
     let res = ecs.register_new_component::<RenderComponent>();
