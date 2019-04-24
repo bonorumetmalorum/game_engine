@@ -18,6 +18,7 @@ use nalgebra::geometry::{Isometry3, Translation, Translation3, Rotation3};
 
 pub mod objects;
 pub mod engine;
+pub mod systems;
 
 #[derive(Clone)]
 pub struct PhysicsComponent {

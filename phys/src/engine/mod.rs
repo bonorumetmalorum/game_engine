@@ -1,4 +1,4 @@
-use ecs::ECS;
+use ecs::*;
 use kiss3d::window::Window;
 use nphysics3d::object::{ColliderHandle, ColliderDesc, RigidBodyDesc};
 use nphysics3d::world::World;
@@ -20,6 +20,9 @@ use ecs::entity::EntityIndex;
 use kiss3d::window::State;
 use nalgebra::Vector3;
 use core::mem;
+use ecs::component::storage::Storage;
+use ecs::component::iter::ComponentIteratorJoin;
+use ecs::component::iter::Iter;
 
 pub struct Engine {
     ecs: ECS,
@@ -31,7 +34,8 @@ impl Engine {
 
     pub fn new() -> Engine {
         let mut ecs = ECS::new();
-        let world: World<f32> = nphysics3d::world::World::new();
+        let mut world: World<f32> = nphysics3d::world::World::new();
+        world.set_gravity(Vector3::y() * -9.81);
         let mut window = Window::new("phyics window");
         let _ = ecs.register_new_component::<BaseColor>();
         let _ = ecs.register_new_component::<RigidBodyComponent>();
@@ -86,10 +90,27 @@ impl Engine {
         let window = mem::replace(&mut self.window, None).unwrap();
         window.render_loop(self)
     }
+
+    pub fn draw(&mut self){
+        let mut body_handle = self.ecs.get_mut::<RigidBodyComponent>();
+        let body_handle_iter = body_handle.get_iter();
+        let mut gfx_handle = self.ecs.get_mut::<Gfx>();
+        let mut graphics_iter = gfx_handle.get_mut_iter();
+        let mut position_update_iter = body_handle_iter.join(graphics_iter).into_iterator_wrapper();
+        for (r, n) in position_update_iter {
+            if let Some(rigidbody) = self.physicsworld.rigid_body(r.0){
+                let position: &Isometry3<f32> = rigidbody.position();
+                println!("updating position {}", position);
+                let mut scene_node =  &mut n.0;
+                scene_node.set_local_transformation(*position)
+            }
+        }
+    }
 }
 
 impl State for Engine {
     fn step(&mut self, window: &mut Window) {
         self.physicsworld.step();
+        self.draw();
     }
 }
