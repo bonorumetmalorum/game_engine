@@ -5,8 +5,6 @@ extern crate core;
 
 use ecs::entity::EntityIndex;
 use ecs::ECS;
-use ecs::component::StubVelocity;
-use ecs::component::StubPosition;
 use criterion::{Criterion, Bencher};
 use ecs::component::iter::Iter;
 use ecs::component::Component;
@@ -16,6 +14,25 @@ use ecs::component::dense_component_storage::DenseComponentIterator;
 use core::borrow::BorrowMut;
 use ecs::component::storage::Storage;
 
+#[derive(Clone)]
+pub struct StubPosition{
+    pub x: f32,
+    pub y: f32,
+}
+
+impl Component for StubPosition{
+    type ComponentStorage = DenseComponentStorage<Self>;
+}
+
+#[derive(Clone)]
+pub struct StubVelocity{
+    pub dx: f32,
+    pub dy: f32,
+}
+
+impl Component for StubVelocity{
+    type ComponentStorage = DenseComponentStorage<Self>;
+}
 
 const NUM_POSITION_ONLY: usize = 9000;
 const NUM_POSITION_AND_VELOCITY: usize = 1000;

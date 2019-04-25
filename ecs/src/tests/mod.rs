@@ -71,7 +71,6 @@ fn remove_entity_from_ecs(){
 
 #[test]
 fn register_new_component(){
-    //
     let mut entity_manager = ECS::new();
     entity_manager.allocate_new_entity();
     let res2 = entity_manager.register_new_component::<StubComponentA>().unwrap();

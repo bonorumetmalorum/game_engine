@@ -5,6 +5,7 @@ use entity::EntityIndex;
 use core::slice;
 use component::iter::Iter;
 
+///Array based storage for components
 #[derive(Clone)]
 pub struct DenseComponentStorage<T: Clone>(pub Vec<ComponentEntry<T>>);
 
@@ -18,8 +19,7 @@ impl<'it, T: Component> Storage<'it> for DenseComponentStorage<T> {
     type Component = T;
     type ComponentIteratorMut = DenseComponentIteratorMut<'it, T>;
     type ComponentIterator = DenseComponentIterator<'it, T>;
-
-    //potentially make this return a result type
+    ///returns a immutable reference to the component at the given `EntityIndex`, if the component doesnt exist Empty is returned
     fn get(&self, id: (usize, u64)) -> &ComponentEntry<Self::Component> {
         if let Some(x) = self.0.get(id.0) {
             x
@@ -27,7 +27,7 @@ impl<'it, T: Component> Storage<'it> for DenseComponentStorage<T> {
             &ComponentEntry::Empty
         }
     }
-
+    ///returns the component at the given `EntityIndex`
     fn remove(&mut self, index: EntityIndex) -> Result<(usize, u64), &str> {
         if let Some(reference) = self.0.get_mut(index.0){
             *reference = ComponentEntry::Empty;
@@ -36,15 +36,15 @@ impl<'it, T: Component> Storage<'it> for DenseComponentStorage<T> {
             Err("index out of bounds")
         }
     }
-
+    ///returns a mutable iterator over the component storage
     fn get_mut_iter(&'it mut self) -> Self::ComponentIteratorMut {
         DenseComponentIteratorMut{current_index: 0, st: self.0.iter_mut()}
     }
-
+    ///returns an immutable iterator over the component storage
     fn get_iter(&'it self) -> Self::ComponentIterator {
         DenseComponentIterator{ st: self.0.iter(), current_index: 0 }
     }
-
+    ///adds a component to a given `EntityIndex`
     fn insert(&mut self, index: (usize, u64), component: Self::Component) -> Result<EntityIndex, &str>{
         if index.0 > self.len(){
             while index.0 > self.len() {
@@ -56,7 +56,7 @@ impl<'it, T: Component> Storage<'it> for DenseComponentStorage<T> {
         }
         Ok(index)
     }
-
+    ///returns the length of the component storage
     fn len(&self) -> usize {
         self.0.len()
     }
@@ -68,6 +68,7 @@ impl<'it, T: Clone> DenseComponentStorage<T> {
     }
 }
 
+///An iterator for the `DenseComponentStorage`
 pub struct DenseComponentIteratorMut<'cs, T: 'cs + Clone>{
     st: slice::IterMut<'cs, ComponentEntry<T>>,
     current_index: usize
@@ -75,7 +76,7 @@ pub struct DenseComponentIteratorMut<'cs, T: 'cs + Clone>{
 
 impl<'it, T: Component> Iter for DenseComponentIteratorMut<'it, T>{
     type Item = &'it mut Box<T>;
-
+    ///gets the next `EntityIndex` and `Component`
     fn next_element(&mut self, until: Option<usize>) -> Option<(Self::Item, usize)> {
         let lim = until.unwrap_or(0);
         loop{
@@ -102,19 +103,19 @@ impl<'it, T: Component> Iter for DenseComponentIteratorMut<'it, T>{
 }
 
 impl<'it, T: 'static + Clone> DenseComponentIteratorMut<'it, T> {
-
+    ///returns a new iterator for the given slice
     pub fn new(it: slice::Iter<'it, ComponentEntry<T>>) -> DenseComponentIterator<'it, T> {
         DenseComponentIterator{
             st: it,
             current_index: 0
         }
     }
-
+    ///returns the current index of the iterator
     pub fn index(&mut self) -> usize {
         self.current_index
     }
 }
-
+///an immutable iterator for the `DenseComponentStorage`
 pub struct DenseComponentIterator<'cs, T: 'cs + Clone>{
     st: slice::Iter<'cs, ComponentEntry<T>>,
     current_index: usize
@@ -122,7 +123,7 @@ pub struct DenseComponentIterator<'cs, T: 'cs + Clone>{
 
 impl<'cs, T: Component> Iter for DenseComponentIterator<'cs, T> {
     type Item = &'cs Box<T>;
-
+    ///returns the next `EntityIndex` and `Component`
     fn next_element(&mut self, until: Option<usize>) -> Option<(Self::Item, usize)> {
         let lim = until.unwrap_or(0);
         loop{
