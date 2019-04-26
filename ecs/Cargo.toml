@@ -5,6 +5,8 @@ authors = ["Govind Venkatesh <venkateshgovind1@gmail.com>"]
 
 [dependencies]
 criterion = "0.2.5"
+downcast-rs = "1.0.3"
+crossbeam = "0.7.1"
 
 [[bench]]
 harness = false

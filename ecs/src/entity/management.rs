@@ -1,4 +1,7 @@
 use super::*;
+use core::slice;
+use component::Iter;
+
 //entry to define an allocation into a generational data structure
 pub struct Entry {
     pub is_live: bool,
@@ -34,11 +37,91 @@ impl EntityAllocator {
 
     pub fn deallocate(&mut self, id: EntityIndex) -> Result<(), &str> {
         if id.1 == self.entity_list[id.0].generation {
-            self.entity_list[id.0].is_live = false;
-            self.free_list.push(id.0);
-            Ok(())
-        }else{
+            if self.entity_list[id.0].is_live {
+                self.entity_list[id.0].is_live = false;
+                self.free_list.push(id.0);
+                Ok(())
+            } else {
+                Err("already deallocated")
+            }
+        } else {
             Err("incorrect generation")
+        }
+    }
+
+    pub fn get_iter_live(&self) -> EntityIteratorLive{
+        EntityIteratorLive{
+            st: self.entity_list.iter(),
+            current_index: 0
+        }
+    }
+
+    pub fn get_iter(&self) -> EntityIterator{
+        EntityIterator{
+            st: self.entity_list.iter(),
+            current_index: 0
+        }
+    }
+}
+
+pub struct EntityIteratorLive<'cs>{
+    st: slice::Iter<'cs, Entry>,
+    current_index: usize
+}
+
+impl<'cs> Iter for EntityIteratorLive<'cs> {
+    type Item = &'cs Entry;
+    //gets the next live entry
+    fn next_element(&mut self, until: Option<usize>) -> Option<(Self::Item, usize)> {
+        let next = until.unwrap_or(0);
+        loop{
+            let r;
+            let i;
+            if next > self.current_index {
+                r = self.st.nth(next - self.current_index);
+                i = next;
+                self.current_index = next + 1;
+            }else{
+                r = self.st.next();
+                i = self.current_index;
+                self.current_index += 1;
+            }
+
+            match r {
+                Some(entry) => if entry.is_live {return Some((entry, i))} else {continue}
+                None => return None
+            }
+        }
+    }
+}
+
+pub struct EntityIterator<'cs>{
+    st: slice::Iter<'cs, Entry>,
+    current_index: usize
+}
+
+impl<'cs> Iter for EntityIterator<'cs> {
+    type Item = &'cs Entry;
+    //gets the next live entry
+    fn next_element(&mut self, until: Option<usize>) -> Option<(Self::Item, usize)> {
+        let next = until.unwrap_or(0);
+        loop{
+            let r;
+            let i;
+            if next > self.current_index {
+                r = self.st.nth(next - self.current_index);
+                i = next;
+                self.current_index = next + 1;
+            }else{
+                r = self.st.next();
+                i = self.current_index;
+                self.current_index += 1;
+            }
+
+            match r {
+                Some(entry) => {return Some((entry, i))}
+                None => return None
+            }
         }
     }
 }
