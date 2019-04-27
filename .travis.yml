@@ -5,6 +5,7 @@ rust:
 
 before_install:
   - sudo apt-get install gnuplot
+  - ./performance/papi_install.sh
 
 script:
   - cargo build --verbose --all
@@ -14,10 +15,11 @@ script:
 branches:
   only:
   - master
+  - non_concurrent
 
 addons:
   artifacts:
     s3_region: "eu-west-1"
     debug: true
     target_paths:
-      - /${TRAVIS_BUILD_NUMBER}/${TRAVIS_JOB_NUMBER}
+      - /${TRAVIS_BRANCH}/{TRAVIS_BUILD_NUMBER}/${TRAVIS_JOB_NUMBER}
