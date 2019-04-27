@@ -37,14 +37,14 @@ impl EntityAllocator {
 
     pub fn deallocate(&mut self, id: EntityIndex) -> Result<(), &str> {
         if id.1 == self.entity_list[id.0].generation {
-            if self.entity_list[id.0].is_live{
+            if self.entity_list[id.0].is_live {
                 self.entity_list[id.0].is_live = false;
                 self.free_list.push(id.0);
                 Ok(())
-            }else{
+            } else {
                 Err("already deallocated")
             }
-        }else{
+        } else {
             Err("incorrect generation")
         }
     }
@@ -125,4 +125,3 @@ impl<'cs> Iter for EntityIterator<'cs> {
         }
     }
 }
-

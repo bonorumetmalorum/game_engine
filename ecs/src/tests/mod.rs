@@ -298,3 +298,37 @@ fn entity_iterator_joint_test(){
     assert_eq!(result.len(), 2);
 }
 
+#[derive(Debug)]
+struct DeltaTime(f32);
+
+#[test]
+fn ecs_add_resource(){
+    let mut ecs = ECS::new();
+    let resource = DeltaTime(32.5);
+    ecs.insert_new_resource(resource);
+    let resource_handle = ecs.get_resource::<DeltaTime>().unwrap();
+    assert_eq!(32.5, resource_handle.r.0);
+}
+
+#[test]
+fn ecs_remove_resource(){
+    let mut ecs = ECS::new();
+    let resource = DeltaTime(32.5);
+    ecs.insert_new_resource(resource);
+    let result = ecs.remove_resource::<DeltaTime>().unwrap();
+    assert_eq!(32.5, (result.get().r.0));
+}
+
+#[test]
+fn ecs_get_mut_resource(){
+    let mut ecs = ECS::new();
+    let resource = DeltaTime(32.5);
+    ecs.insert_new_resource(resource);
+    {
+        let mut resource_handle = ecs.get_mut_resource::<DeltaTime>().unwrap();
+        resource_handle.r.0 += 12.5;
+    }
+    let resource_handle = ecs.get_resource::<DeltaTime>().unwrap();
+    assert_eq!(45.0, resource_handle.r.0)
+}
+
