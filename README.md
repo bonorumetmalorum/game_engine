@@ -4,7 +4,7 @@
 to run the clock count benchmarks in this version of the ECS run "cargo bench"*
 -to view the report the index.html file is located at "/ecs/target/criterion/report/index.html"
 
-to run the cache benchmarks in this version of the ECS run "cargo perf"*
+to run the cache benchmarks in this version of the ECS run "cargo run" in the /performance directory*
 
 to run the unit tests in this version of the ECS run "cargo test"
 
