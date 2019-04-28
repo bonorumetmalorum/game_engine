@@ -8,7 +8,7 @@ This version of the code is what was used to benchmark against C++.
 To run the unit tests use the command "cargo test"
 To run the clock count benchmarks use the command "cargo bench"
 -to view the report the index.html file is located at "/ecs/target/criterion/report/index.html"
-To run the cache benchamrks use the command "cargo perf" *
+To run the cache benchmarks use the command "cargo perf" *
 
 finally to run the physics simulation, which at this point in time is exteremly simple change directory to /phys and "cargo run --release"
 
