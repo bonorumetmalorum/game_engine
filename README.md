@@ -5,12 +5,12 @@ This version of the ECS does not contain any concurrency features. It is being u
 
 This version of the code is what was used to benchmark against C++.
 
-To run the unit tests use the command "cargo test"
-To run the clock count benchmarks use the command "cargo bench"
+To run the unit tests use the command "cargo test" in the /ecs directory
+To run the clock count benchmarks use the command "cargo bench" in the /ecs directory
 -to view the report the index.html file is located at "/ecs/target/criterion/report/index.html"
 To run the cache benchmarks use the command "cargo run" in the /performance directory *
 
-finally to run the physics simulation, which at this point in time is exteremly simple change directory to /phys and "cargo run --release"
+finally to run the physics simulation, which at this point in time is exteremly simple change directory to /phys and "cargo run" or "cargo run --release" for optimisations
 
 
 *In order to run these benchmarks use the command "sudo sh -c 'echo -1 >/proc/sys/kernel/perf_event_paranoid'" to unlock the hardware counters for your system
