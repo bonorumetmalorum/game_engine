@@ -39,42 +39,28 @@ impl Component for RenderComponent {
 }
 
 fn main() {
-//    let mut ecs = setup_ecs();
-//    let mut window = Window::new("physics demo");
-//    let mut c = window.add_cube(1.0,1.0,1.0);
-//    window.set_light(Light::StickToCamera);
-//    let rot = UnitQuaternion::from_axis_angle(&Vector3::y_axis(), 0.014);
-//
-//    while window.render() {
-//        c.prepend_to_local_rotation(&rot);
-//    }
+    let num= 10;
+    let rad = 0.1;
+    let shift = rad * 2.0 + 0.002;
+    let centerx = shift * (num as f32) / 2.0;
+    let centery = shift / 2.0;
+    let centerz = shift * (num as f32) / 2.0;
+    let height = 3.0;
     let mut engine = Engine::new();
-    engine.create_ball(
-        0.1,
-        Isometry3::identity()
-    );
+    for i in 0usize..num {
+        for j in 0usize..num {
+            for k in 0usize..num {
+                let x = i as f32 * shift - centerx;
+                let y = j as f32 * shift + centery + height;
+                let z = k as f32 * shift - centerz;
+
+                // Build the rigid body and its collider.
+                engine.create_ball(
+                    rad,
+                    Isometry3::new(Vector3::new(x, y , z), Vector3::new(0.0, 0.0, 0.0))
+                );
+            }
+        }
+    }
     engine.run();
-}
-
-fn setup_ecs() -> ECS {
-    let mut world = World::new();
-    world.set_gravity(Vector3::new(0.0, -9.81, 0.0)); //physics world
-    let mut ecs = ECS::new();
-
-    //ball entity
-    let ball = ShapeHandle::new(Ball::new(0.1));
-    let collider_desc = ColliderDesc::new(ball).density(1.0);
-    let mut rb_desc = RigidBodyDesc::new().collider(&collider_desc).build(&mut world).handle();
-
-    //ground -- figure out how ground body handle words and add collider to it.
-    let ground = BodyHandle::ground();
-    let ground_size = 50.0;
-    let ground_shape = ShapeHandle::new(Cuboid::new(Vector3::repeat(ground_size)));
-    let physhandle = ColliderDesc::new(ground_shape).translation(Vector3::y() * -ground_size).build(&mut world).handle();
-
-
-    let res = ecs.register_new_component::<PhysicsComponent>();
-    let res = ecs.register_new_component::<RenderComponent>();
-    ecs.insert_new_resource(world); //store physics world in resources
-    ecs
 }
