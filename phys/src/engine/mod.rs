@@ -100,7 +100,6 @@ impl Engine {
         for (r, n) in position_update_iter {
             if let Some(rigidbody) = self.physicsworld.rigid_body(r.0){
                 let position: &Isometry3<f32> = rigidbody.position();
-                println!("updating position {}", position);
                 let mut scene_node =  &mut n.0;
                 scene_node.set_local_transformation(*position)
             }

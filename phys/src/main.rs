@@ -62,5 +62,6 @@ fn main() {
             }
         }
     }
+    engine.create_box(50.0, Isometry3::new(Vector3::new(0.0, 0.0 , 0.0), Vector3::new(0.0, 0.0, 0.0)));
     engine.run();
 }
